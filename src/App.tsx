@@ -10,6 +10,7 @@ import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import MyPage from "./pages/MyPage";
 import WishlistPage from "./pages/WishlistPage";
+import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/produkt/:id" element={<ProductDetailPage />} />
             <Route path="/min-side" element={<MyPage />} />
             <Route path="/oenskeliste" element={<WishlistPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
