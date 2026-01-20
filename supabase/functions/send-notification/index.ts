@@ -45,16 +45,12 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Product not found");
     }
 
-    // Get all reservations for this product with user emails
+    console.log(`Product found: ${product.title}`);
+
+    // Get all reservations for this product
     const { data: reservations, error: reservationsError } = await supabase
       .from("reservations")
-      .select(`
-        *,
-        profiles:user_id (
-          email,
-          full_name
-        )
-      `)
+      .select("*")
       .eq("product_id", productId);
 
     if (reservationsError) {
@@ -63,6 +59,41 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Found ${reservations?.length || 0} reservations`);
+
+    if (!reservations || reservations.length === 0) {
+      console.log("No reservations found for this product");
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "No reservations to notify",
+          emailsSent: 0,
+          emailsFailed: 0 
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Get unique user IDs from reservations
+    const userIds = [...new Set(reservations.map(r => r.user_id))];
+    
+    // Fetch profiles for these users
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("user_id, email, full_name")
+      .in("user_id", userIds);
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+      throw new Error("Could not fetch user profiles");
+    }
+
+    console.log(`Found ${profiles?.length || 0} profiles`);
+
+    // Create a map of user_id to profile
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
     // Prepare email content based on notification type
     const subject = notificationType === "ordered"
@@ -80,12 +111,16 @@ const handler = async (req: Request): Promise<Response> => {
         </p>`
       : "";
 
-    // Send emails to all users who reserved using Resend API directly
+    // Send emails to all users who reserved
     const emailPromises = reservations
-      ?.filter((r: any) => r.profiles?.email)
-      .map(async (reservation: any) => {
-        const userEmail = reservation.profiles.email;
-        const userName = reservation.profiles.full_name || "Kære medlem";
+      .filter(r => {
+        const profile = profileMap.get(r.user_id);
+        return profile?.email;
+      })
+      .map(async (reservation) => {
+        const profile = profileMap.get(reservation.user_id)!;
+        const userEmail = profile.email;
+        const userName = profile.full_name || "Kære medlem";
         const totalPrice = (reservation.quantity * product.price_per_unit).toFixed(2);
 
         const html = `
@@ -130,11 +165,14 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (!res.ok) {
           const error = await res.text();
+          console.error(`Failed to send email to ${userEmail}:`, error);
           throw new Error(`Failed to send email: ${error}`);
         }
 
-        return res.json();
-      }) || [];
+        const result = await res.json();
+        console.log(`Email sent successfully to ${userEmail}:`, result);
+        return result;
+      });
 
     const results = await Promise.allSettled(emailPromises);
     
@@ -143,19 +181,27 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Emails sent: ${successCount} success, ${failCount} failed`);
 
-    // Update product status if notification is "ordered" or "arrived"
+    // Update product status
     const newStatus = notificationType === "ordered" ? "ordered" : "arrived";
-    await supabase
+    const { error: updateProductError } = await supabase
       .from("products")
       .update({ status: newStatus })
       .eq("id", productId);
 
+    if (updateProductError) {
+      console.error("Error updating product status:", updateProductError);
+    }
+
     // Update reservation statuses
     const reservationStatus = notificationType === "ordered" ? "ordered" : "ready";
-    await supabase
+    const { error: updateReservationsError } = await supabase
       .from("reservations")
       .update({ status: reservationStatus })
       .eq("product_id", productId);
+
+    if (updateReservationsError) {
+      console.error("Error updating reservation statuses:", updateReservationsError);
+    }
 
     return new Response(
       JSON.stringify({ 
