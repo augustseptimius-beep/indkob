@@ -14,6 +14,8 @@ interface CMSFormValues {
   hero_content: string;
   how_it_works_title: string;
   how_it_works_content: string;
+  payment_info_title: string;
+  payment_info_content: string;
 }
 
 export function AdminCMS() {
@@ -26,6 +28,8 @@ export function AdminCMS() {
       hero_content: '',
       how_it_works_title: '',
       how_it_works_content: '',
+      payment_info_title: '',
+      payment_info_content: '',
     },
   });
 
@@ -33,12 +37,15 @@ export function AdminCMS() {
     if (cmsContent) {
       const hero = cmsContent['hero'];
       const howItWorks = cmsContent['how_it_works'];
+      const paymentInfo = cmsContent['payment_info'];
 
       reset({
         hero_title: hero?.title || '',
         hero_content: hero?.content || '',
         how_it_works_title: howItWorks?.title || '',
         how_it_works_content: howItWorks?.content || '',
+        payment_info_title: paymentInfo?.title || 'Betalingsinfo',
+        payment_info_content: paymentInfo?.content || '',
       });
     }
   }, [cmsContent, reset]);
@@ -48,6 +55,7 @@ export function AdminCMS() {
       await Promise.all([
         updateContent.mutateAsync({ key: 'hero', title: data.hero_title, content: data.hero_content }),
         updateContent.mutateAsync({ key: 'how_it_works', title: data.how_it_works_title, content: data.how_it_works_content }),
+        updateContent.mutateAsync({ key: 'payment_info', title: data.payment_info_title, content: data.payment_info_content }),
       ]);
       toast.success('Indhold opdateret!');
       reset(data);
@@ -124,6 +132,34 @@ export function AdminCMS() {
                 {...register('how_it_works_content')}
                 placeholder="Forklar processen..."
                 rows={4}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment Info Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Betalingsinformation</CardTitle>
+            <CardDescription>
+              MobilePay-nummer og betalingsinstruktioner der vises når varer er klar
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="payment_info_title">Titel</Label>
+              <Input
+                id="payment_info_title"
+                {...register('payment_info_title')}
+                placeholder="Betalingsinfo"
+              />
+            </div>
+            <div>
+              <Label htmlFor="payment_info_content">MobilePay-nummer</Label>
+              <Input
+                id="payment_info_content"
+                {...register('payment_info_content')}
+                placeholder="12345678"
               />
             </div>
           </CardContent>
