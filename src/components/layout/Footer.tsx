@@ -31,6 +31,9 @@ export function Footer() {
               <Link to="/auth" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
                 Log ind / Bliv medlem
               </Link>
+              <Link to="/privatlivspolitik" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
+                Privatlivspolitik
+              </Link>
             </nav>
           </div>
 
