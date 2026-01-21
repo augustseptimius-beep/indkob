@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { ArrowLeft, ExternalLink, MapPin, Package, Minus, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { OrganicBadge } from '@/components/OrganicBadge';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -94,7 +95,11 @@ export default function ProductDetailPage() {
                 {product.category.name}
               </p>
             )}
-            <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">{product.title}</h1>
+            
+            <div className="flex items-center gap-3 mb-4">
+              <h1 className="font-serif text-3xl md:text-4xl font-bold">{product.title}</h1>
+              {product.is_organic && <OrganicBadge size="lg" />}
+            </div>
             
             {product.origin_country && (
               <div className="flex items-center gap-2 text-muted-foreground mb-4">
@@ -112,7 +117,12 @@ export default function ProductDetailPage() {
               <p className="text-muted-foreground mb-6">{product.description}</p>
             )}
 
-            {product.supplier_url && (
+            {product.supplier_url && product.supplier_name && (
+              <a href={product.supplier_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline mb-6">
+                {product.supplier_name} <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+            {product.supplier_url && !product.supplier_name && (
               <a href={product.supplier_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline mb-6">
                 Se hos leverandør <ExternalLink className="w-4 h-4" />
               </a>

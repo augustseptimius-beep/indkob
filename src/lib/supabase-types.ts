@@ -18,6 +18,7 @@ export interface Product {
   current_quantity: number;
   supplier_name: string | null;
   status: ProductStatus;
+  is_organic: boolean;
   created_at: string;
   updated_at: string;
   category?: Category | null;

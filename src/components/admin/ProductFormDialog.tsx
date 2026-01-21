@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -42,6 +43,7 @@ const productSchema = z.object({
   minimum_purchase: z.coerce.number().int().positive('Minimum køb skal være positiv'),
   supplier_name: z.string().optional(),
   status: z.enum(['open', 'ordered', 'arrived', 'completed']),
+  is_organic: z.boolean(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -78,6 +80,7 @@ export function ProductFormDialog({
       minimum_purchase: 1,
       supplier_name: '',
       status: 'open',
+      is_organic: false,
     },
   });
 
@@ -96,6 +99,7 @@ export function ProductFormDialog({
         minimum_purchase: product.minimum_purchase,
         supplier_name: product.supplier_name || '',
         status: product.status,
+        is_organic: product.is_organic || false,
       });
     } else {
       form.reset({
@@ -111,6 +115,7 @@ export function ProductFormDialog({
         minimum_purchase: 1,
         supplier_name: '',
         status: 'open',
+        is_organic: false,
       });
     }
   }, [product, form]);
@@ -336,6 +341,29 @@ export function ProductFormDialog({
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="is_organic"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="cursor-pointer">
+                      Økologisk produkt
+                    </FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Marker hvis produktet er økologisk certificeret
+                    </p>
+                  </div>
                 </FormItem>
               )}
             />

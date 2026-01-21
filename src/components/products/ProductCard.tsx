@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/supabase-types';
 import { MapPin, Package } from 'lucide-react';
+import { OrganicBadge } from '@/components/OrganicBadge';
 
 interface ProductCardProps {
   product: Product;
@@ -62,6 +63,10 @@ export function ProductCard({ product }: ProductCardProps) {
           <Badge className={`absolute top-3 right-3 ${getStatusClass(product.status)}`}>
             {getStatusLabel(product.status)}
           </Badge>
+          {/* Organic Badge */}
+          {product.is_organic && (
+            <OrganicBadge className="absolute top-3 left-3" size="sm" />
+          )}
         </div>
 
         <CardContent className="p-4">
