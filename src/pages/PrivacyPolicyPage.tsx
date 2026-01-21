@@ -4,19 +4,6 @@ import { useCMSContent } from '@/hooks/useCMS';
 export default function PrivacyPolicyPage() {
   const { data: content, isLoading } = useCMSContent();
 
-  const dataCollected = content?.['privacy_policy_data_collected']?.content?.split(',').map(s => s.trim()).filter(Boolean) || [
-    'Navn',
-    'E-mailadresse',
-    'Oplysninger om dine reservationer og køb'
-  ];
-
-  const purposes = content?.['privacy_policy_purpose']?.content?.split(',').map(s => s.trim()).filter(Boolean) || [
-    'Administration af dit medlemskab og brugeroprettelse',
-    'Håndtering af dine reservationer og bestillinger',
-    'Kommunikation om ordrestatus og leveringer',
-    'Udsendelse af notifikationer vedrørende dine reserverede varer'
-  ];
-
   const introText = content?.['privacy_policy_intro']?.content || 
     'Klitmøllers Indkøbsforening er dataansvarlig for behandlingen af de personoplysninger, vi modtager om dig. Har du spørgsmål til vores behandling af dine oplysninger, er du velkommen til at kontakte os.';
 
@@ -57,26 +44,41 @@ export default function PrivacyPolicyPage() {
               Vi indsamler følgende personoplysninger, når du opretter en konto hos os:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2">
-              {dataCollected.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
+              <li><strong>E-mailadresse:</strong> Bruges til login og kommunikation om dine reservationer</li>
+              <li><strong>Navn:</strong> Valgfrit felt til at identificere dig i systemet</li>
+              <li><strong>Reservationshistorik:</strong> Oplysninger om hvilke varer du har reserveret, mængder og status</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">3. Formål med behandlingen</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">3. Hvor opbevares dine data?</h2>
             <p className="text-muted-foreground mb-4">
-              Vi behandler dine personoplysninger til følgende formål:
+              Dine data opbevares sikkert hos vores hostingudbyder:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2">
-              {purposes.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
+              <li><strong>Database:</strong> Dine kontooplysninger og reservationer gemmes i en sikker, krypteret database hos vores cloud-udbyder</li>
+              <li><strong>Lokal lagring (localStorage):</strong> Din browser gemmer midlertidigt login-session og præferencer lokalt på din enhed</li>
+            </ul>
+            <p className="text-muted-foreground mt-4">
+              Al dataoverførsel sker via krypteret HTTPS-forbindelse.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="font-serif text-xl font-semibold mb-4">4. Formål med behandlingen</h2>
+            <p className="text-muted-foreground mb-4">
+              Vi behandler dine personoplysninger udelukkende til følgende formål:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-2">
+              <li>Administration af dit medlemskab og login</li>
+              <li>Håndtering af dine reservationer og bestillinger</li>
+              <li>Udsendelse af e-mail-notifikationer når dine reserverede varer skifter status</li>
+              <li>Kommunikation om ordrestatus og afhentning</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">4. Retsgrundlag</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">5. Retsgrundlag</h2>
             <p className="text-muted-foreground">
               Behandlingen af dine personoplysninger sker på baggrund af dit samtykke ved oprettelse 
               af konto samt for at opfylde aftalen om levering af varer (GDPR artikel 6, stk. 1, litra a og b).
@@ -84,7 +86,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">5. Opbevaringsperiode</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">6. Opbevaringsperiode</h2>
             <p className="text-muted-foreground">
               Vi opbevarer dine personoplysninger, så længe du har en aktiv konto hos os. 
               Hvis du ønsker at slette din konto, vil dine personoplysninger blive slettet, 
@@ -93,7 +95,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">6. Dine rettigheder</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">7. Dine rettigheder</h2>
             <p className="text-muted-foreground mb-4">
               Du har følgende rettigheder i forhold til vores behandling af dine personoplysninger:
             </p>
@@ -108,28 +110,50 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">7. Cookies</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">8. Cookies og lokal lagring</h2>
             <p className="text-muted-foreground mb-4">
-              Vi bruger følgende typer cookies på vores hjemmeside:
+              Vi bruger <strong>ingen tracking- eller markedsføringscookies</strong>. Den eneste lagring vi anvender er:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2">
-              <li><strong>Nødvendige cookies:</strong> Disse cookies er nødvendige for, at hjemmesiden kan fungere korrekt, 
-              herunder autentificering og sikkerhedsfunktioner.</li>
-              <li><strong>Præference-cookies:</strong> Disse cookies husker dine præferencer, såsom cookie-samtykke.</li>
+              <li>
+                <strong>Autentificerings-session (localStorage):</strong> Gemmer din login-session så du forbliver logget ind. 
+                Slettes automatisk ved logout eller efter inaktivitet.
+              </li>
+              <li>
+                <strong>Cookie-banner status (localStorage):</strong> Husker at du har set informationen om cookies, 
+                så banneret ikke vises igen.
+              </li>
+              <li>
+                <strong>Sidebar-præference (cookie):</strong> Teknisk cookie der husker om sidepanelet er åbent eller lukket.
+              </li>
             </ul>
+            <p className="text-muted-foreground mt-4">
+              Alle disse er <strong>nødvendige funktionelle cookies</strong> og kræver ikke samtykke ifølge ePrivacy-direktivet, 
+              da de er essentielle for hjemmesidens grundlæggende funktionalitet.
+            </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">8. Sikkerhed</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">9. Tredjeparter</h2>
+            <p className="text-muted-foreground">
+              Vi deler ikke dine personoplysninger med tredjeparter til markedsføringsformål. 
+              Dine data behandles udelukkende af vores hostingudbyder som databehandler, 
+              og dette sker i overensstemmelse med gældende databeskyttelseslovgivning.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="font-serif text-xl font-semibold mb-4">10. Sikkerhed</h2>
             <p className="text-muted-foreground">
               Vi tager sikkerhed alvorligt og anvender passende tekniske og organisatoriske 
               foranstaltninger for at beskytte dine personoplysninger mod uautoriseret adgang, 
-              ændring, offentliggørelse eller sletning.
+              ændring, offentliggørelse eller sletning. Dette inkluderer krypterede forbindelser (HTTPS), 
+              sikker autentificering og adgangskontrol til databasen.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">9. Kontakt</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">11. Kontakt</h2>
             <p className="text-muted-foreground">
               Har du spørgsmål til vores behandling af dine personoplysninger, kan du kontakte os på:{' '}
               <a href={`mailto:${contactInfo}`} className="text-primary hover:underline">
@@ -139,7 +163,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">10. Klageadgang</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">12. Klageadgang</h2>
             <p className="text-muted-foreground">
               Hvis du er utilfreds med vores behandling af dine personoplysninger, kan du klage til 
               Datatilsynet. Du finder kontaktoplysninger på{' '}
@@ -150,7 +174,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-4">11. Ændringer</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">13. Ændringer</h2>
             <p className="text-muted-foreground">
               Vi forbeholder os retten til at opdatere denne privatlivspolitik. Ved væsentlige 
               ændringer vil vi informere dig via e-mail eller på hjemmesiden.

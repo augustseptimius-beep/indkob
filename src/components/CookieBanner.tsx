@@ -1,27 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Cookie, X } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 
-const COOKIE_CONSENT_KEY = 'cookie-consent';
+const COOKIE_INFO_DISMISSED_KEY = 'cookie-info-dismissed';
 
 export function CookieBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!consent) {
+    const dismissed = localStorage.getItem(COOKIE_INFO_DISMISSED_KEY);
+    if (!dismissed) {
       setIsVisible(true);
     }
   }, []);
 
-  const acceptCookies = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
-    setIsVisible(false);
-  };
-
-  const declineCookies = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
+  const dismissBanner = () => {
+    localStorage.setItem(COOKIE_INFO_DISMISSED_KEY, 'true');
     setIsVisible(false);
   };
 
@@ -32,29 +27,24 @@ export function CookieBanner() {
       <div className="container-wide">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <Cookie className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
+            <Info className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="text-sm text-foreground font-medium">
-                Vi bruger cookies
+                Information om cookies
               </p>
               <p className="text-sm text-muted-foreground">
-                Denne hjemmeside bruger nødvendige cookies til at fungere korrekt. 
-                Læs vores{' '}
+                Denne hjemmeside bruger kun nødvendige cookies til autentificering og grundlæggende funktionalitet. 
+                Vi bruger ingen tracking- eller markedsføringscookies.{' '}
                 <Link to="/privatlivspolitik" className="text-primary hover:underline">
-                  privatlivspolitik
-                </Link>{' '}
-                for mere information.
+                  Læs mere i vores privatlivspolitik
+                </Link>.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" onClick={declineCookies}>
-              Afvis
-            </Button>
-            <Button size="sm" onClick={acceptCookies}>
-              Acceptér
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={dismissBanner} className="flex-shrink-0">
+            <X className="h-4 w-4 mr-2" />
+            Luk
+          </Button>
         </div>
       </div>
     </div>
