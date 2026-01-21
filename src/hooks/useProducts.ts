@@ -53,7 +53,9 @@ export function useProducts(categoryId?: string) {
 }
 
 export function useProduct(id: string) {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
     queryKey: ['product', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -70,6 +72,33 @@ export function useProduct(id: string) {
     },
     enabled: !!id,
   });
+
+  // Set up realtime subscription for this specific product
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`product-${id}-realtime`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'products',
+          filter: `id=eq.${id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['product', id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, queryClient]);
+
+  return query;
 }
 
 export function useCategories() {

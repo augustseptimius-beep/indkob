@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Reservation } from '@/lib/supabase-types';
+import type { Reservation, Product } from '@/lib/supabase-types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 
@@ -121,11 +121,38 @@ export function useCreateReservation() {
         .single();
 
       if (error) throw error;
-      return data;
+      return { ...data, productId, quantity };
     },
-    onSuccess: () => {
+    onMutate: async ({ productId, quantity }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['product', productId] });
+      
+      // Snapshot the previous value
+      const previousProduct = queryClient.getQueryData<Product>(['product', productId]);
+      
+      // Optimistically update the product
+      if (previousProduct) {
+        queryClient.setQueryData<Product>(['product', productId], {
+          ...previousProduct,
+          current_quantity: previousProduct.current_quantity + quantity,
+        });
+      }
+      
+      return { previousProduct, productId };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousProduct) {
+        queryClient.setQueryData(['product', context.productId], context.previousProduct);
+      }
+    },
+    onSettled: (data) => {
+      // Always refetch after error or success to ensure we have fresh data
       queryClient.invalidateQueries({ queryKey: ['my-reservations'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (data?.productId) {
+        queryClient.invalidateQueries({ queryKey: ['product', data.productId] });
+      }
     },
   });
 }
