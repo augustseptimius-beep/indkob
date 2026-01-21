@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import organicLabel from '@/assets/organic-label.jpg';
 
 interface OrganicBadgeProps {
   className?: string;
@@ -13,22 +14,11 @@ export function OrganicBadge({ className, size = 'md' }: OrganicBadgeProps) {
   };
 
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center rounded-full bg-red-600 text-white font-bold',
-        sizeClasses[size],
-        className
-      )}
+    <img
+      src={organicLabel}
+      alt="Økologisk"
       title="Økologisk"
-    >
-      <span className={cn(
-        'font-serif',
-        size === 'sm' && 'text-xs',
-        size === 'md' && 'text-sm',
-        size === 'lg' && 'text-lg'
-      )}>
-        Ø
-      </span>
-    </div>
+      className={cn(sizeClasses[size], className)}
+    />
   );
 }
