@@ -8,18 +8,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogOut, ShoppingBag, Settings, X } from 'lucide-react';
+import { Menu, User, LogOut, ShoppingBag, Settings, X, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useMyReservations } from '@/hooks/useReservations';
+import { Badge } from '@/components/ui/badge';
 
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { data: reservations } = useMyReservations();
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
+
+  // Count active reservations (not completed)
+  const activeReservations = reservations?.filter(r => r.status !== 'completed') || [];
+  const reservationCount = activeReservations.length;
+  
+  // Check if any reservations need payment (ordered or ready status)
+  const hasPendingPayment = activeReservations.some(r => r.status === 'ordered' || r.status === 'ready');
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
@@ -50,30 +60,48 @@ export function Header() {
               Ønskeliste
             </Link>
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate('/min-side')}>
-                    <ShoppingBag className="mr-2 h-4 w-4" />
-                    Min side
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Admin
-                    </DropdownMenuItem>
+              <>
+                {/* Min side with badge */}
+                <Link
+                  to="/min-side"
+                  className="relative flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  <span>Min side</span>
+                  {reservationCount > 0 && (
+                    <Badge 
+                      variant={hasPendingPayment ? "destructive" : "default"}
+                      className={`absolute -top-2 -right-4 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs ${
+                        hasPendingPayment ? 'animate-pulse' : ''
+                      }`}
+                    >
+                      {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-0.5" />}
+                      {reservationCount}
+                    </Badge>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log ud
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </Link>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Admin
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log ud
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <Button onClick={() => navigate('/auth')} variant="default">
                 Log ind
@@ -82,12 +110,27 @@ export function Header() {
           </nav>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          <div className="md:hidden flex items-center gap-2">
+            {user && reservationCount > 0 && (
+              <Link to="/min-side" className="relative p-2">
+                <ShoppingBag className="h-5 w-5" />
+                <Badge 
+                  variant={hasPendingPayment ? "destructive" : "default"}
+                  className={`absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs ${
+                    hasPendingPayment ? 'animate-pulse' : ''
+                  }`}
+                >
+                  {reservationCount}
+                </Badge>
+              </Link>
+            )}
+            <button
+              className="p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -112,10 +155,20 @@ export function Header() {
                 <>
                   <Link
                     to="/min-side"
-                    className="text-foreground font-medium py-2"
+                    className="flex items-center gap-2 text-foreground font-medium py-2"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <ShoppingBag className="h-5 w-5" />
                     Min side
+                    {reservationCount > 0 && (
+                      <Badge 
+                        variant={hasPendingPayment ? "destructive" : "default"}
+                        className={hasPendingPayment ? 'animate-pulse' : ''}
+                      >
+                        {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-1" />}
+                        {reservationCount} {hasPendingPayment ? '- Afventer betaling' : ''}
+                      </Badge>
+                    )}
                   </Link>
                   {isAdmin && (
                     <Link
