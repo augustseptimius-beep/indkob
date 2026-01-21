@@ -112,6 +112,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_organic: boolean
           minimum_purchase: number
           origin_country: string | null
           price_per_unit: number
@@ -130,6 +131,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_organic?: boolean
           minimum_purchase?: number
           origin_country?: string | null
           price_per_unit: number
@@ -148,6 +150,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_organic?: boolean
           minimum_purchase?: number
           origin_country?: string | null
           price_per_unit?: number
