@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { useProducts } from '@/hooks/useProducts';
+import { useProducts, useUpdateProduct } from '@/hooks/useProducts';
 import { useAllReservations } from '@/hooks/useReservations';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Mail, Check, Package, Truck } from 'lucide-react';
+import { Check, Package, Truck, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function AdminOrders() {
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: allReservations, isLoading: reservationsLoading } = useAllReservations();
-  const [sendingNotification, setSendingNotification] = useState<string | null>(null);
+  const updateProduct = useUpdateProduct();
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   const isLoading = productsLoading || reservationsLoading;
 
@@ -33,24 +33,24 @@ export function AdminOrders() {
   const orderedProducts = products?.filter((p) => p.status === 'ordered');
   const arrivedProducts = products?.filter((p) => p.status === 'arrived');
 
-  const sendNotification = async (productId: string, type: 'ordered' | 'arrived') => {
-    setSendingNotification(productId);
+  const updateProductStatus = async (productId: string, newStatus: 'ordered' | 'arrived') => {
+    setUpdatingStatus(productId);
     try {
-      const { data, error } = await supabase.functions.invoke('send-notification', {
-        body: { productId, notificationType: type },
-      });
-
-      if (error) throw error;
-
+      await updateProduct.mutateAsync({ id: productId, status: newStatus });
+      
+      const statusLabel = newStatus === 'ordered' ? 'bestilt' : 'ankommet';
       toast.success(
-        `Email sendt til ${data.emailsSent} brugere!`,
-        { description: type === 'ordered' ? 'Produktet er markeret som bestilt' : 'Produktet er markeret som ankommet' }
+        `Produktet er markeret som ${statusLabel}`,
+        { 
+          description: 'Notifikationer sendes automatisk til alle brugere med reservationer.',
+          icon: <Mail className="h-4 w-4" />
+        }
       );
     } catch (error: any) {
-      console.error('Error sending notification:', error);
-      toast.error('Kunne ikke sende notifikation', { description: error.message });
+      console.error('Error updating product status:', error);
+      toast.error('Kunne ikke opdatere status', { description: error.message });
     } finally {
-      setSendingNotification(null);
+      setUpdatingStatus(null);
     }
   };
 
@@ -71,6 +71,18 @@ export function AdminOrders() {
 
   return (
     <div className="space-y-8">
+      {/* Info banner */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-3">
+            <Mail className="h-5 w-5 text-primary" />
+            <p className="text-sm">
+              <strong>Automatiske notifikationer:</strong> Når du ændrer et produkts status, sendes der automatisk email til alle brugere med reservationer.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Ready to Order */}
       <section>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -109,12 +121,12 @@ export function AdminOrders() {
                       </p>
                     </div>
                     <Button
-                      onClick={() => sendNotification(product.id, 'ordered')}
-                      disabled={sendingNotification === product.id}
+                      onClick={() => updateProductStatus(product.id, 'ordered')}
+                      disabled={updatingStatus === product.id}
                       className="flex items-center gap-2"
                     >
-                      <Mail className="h-4 w-4" />
-                      {sendingNotification === product.id ? 'Sender...' : 'Marker som bestilt'}
+                      <Truck className="h-4 w-4" />
+                      {updatingStatus === product.id ? 'Opdaterer...' : 'Marker som bestilt'}
                     </Button>
                   </div>
                 </CardContent>
@@ -159,13 +171,13 @@ export function AdminOrders() {
                       </p>
                     </div>
                     <Button
-                      onClick={() => sendNotification(product.id, 'arrived')}
-                      disabled={sendingNotification === product.id}
+                      onClick={() => updateProductStatus(product.id, 'arrived')}
+                      disabled={updatingStatus === product.id}
                       variant="outline"
                       className="flex items-center gap-2"
                     >
                       <Package className="h-4 w-4" />
-                      {sendingNotification === product.id ? 'Sender...' : 'Marker som ankommet'}
+                      {updatingStatus === product.id ? 'Opdaterer...' : 'Marker som ankommet'}
                     </Button>
                   </div>
                 </CardContent>
