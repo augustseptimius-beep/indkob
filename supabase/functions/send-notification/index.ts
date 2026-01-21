@@ -181,18 +181,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Emails sent: ${successCount} success, ${failCount} failed`);
 
-    // Update product status
-    const newStatus = notificationType === "ordered" ? "ordered" : "arrived";
-    const { error: updateProductError } = await supabase
-      .from("products")
-      .update({ status: newStatus })
-      .eq("id", productId);
-
-    if (updateProductError) {
-      console.error("Error updating product status:", updateProductError);
-    }
-
-    // Update reservation statuses
+    // Update reservation statuses based on notification type
     const reservationStatus = notificationType === "ordered" ? "ordered" : "ready";
     const { error: updateReservationsError } = await supabase
       .from("reservations")
@@ -202,6 +191,8 @@ const handler = async (req: Request): Promise<Response> => {
     if (updateReservationsError) {
       console.error("Error updating reservation statuses:", updateReservationsError);
     }
+
+    console.log(`Updated reservation statuses to ${reservationStatus}`);
 
     return new Response(
       JSON.stringify({ 
