@@ -16,6 +16,10 @@ interface CMSFormValues {
   how_it_works_content: string;
   payment_info_title: string;
   payment_info_content: string;
+  privacy_intro: string;
+  privacy_data_collected: string;
+  privacy_purpose: string;
+  privacy_contact: string;
 }
 
 export function AdminCMS() {
@@ -30,6 +34,10 @@ export function AdminCMS() {
       how_it_works_content: '',
       payment_info_title: '',
       payment_info_content: '',
+      privacy_intro: '',
+      privacy_data_collected: '',
+      privacy_purpose: '',
+      privacy_contact: '',
     },
   });
 
@@ -38,6 +46,10 @@ export function AdminCMS() {
       const hero = cmsContent['hero'];
       const howItWorks = cmsContent['how_it_works'];
       const paymentInfo = cmsContent['payment_info'];
+      const privacyIntro = cmsContent['privacy_policy_intro'];
+      const privacyData = cmsContent['privacy_policy_data_collected'];
+      const privacyPurpose = cmsContent['privacy_policy_purpose'];
+      const privacyContact = cmsContent['privacy_policy_contact'];
 
       reset({
         hero_title: hero?.title || '',
@@ -46,6 +58,10 @@ export function AdminCMS() {
         how_it_works_content: howItWorks?.content || '',
         payment_info_title: paymentInfo?.title || 'Betalingsinfo',
         payment_info_content: paymentInfo?.content || '',
+        privacy_intro: privacyIntro?.content || '',
+        privacy_data_collected: privacyData?.content || '',
+        privacy_purpose: privacyPurpose?.content || '',
+        privacy_contact: privacyContact?.content || '',
       });
     }
   }, [cmsContent, reset]);
@@ -56,6 +72,10 @@ export function AdminCMS() {
         updateContent.mutateAsync({ key: 'hero', title: data.hero_title, content: data.hero_content }),
         updateContent.mutateAsync({ key: 'how_it_works', title: data.how_it_works_title, content: data.how_it_works_content }),
         updateContent.mutateAsync({ key: 'payment_info', title: data.payment_info_title, content: data.payment_info_content }),
+        updateContent.mutateAsync({ key: 'privacy_policy_intro', content: data.privacy_intro }),
+        updateContent.mutateAsync({ key: 'privacy_policy_data_collected', content: data.privacy_data_collected }),
+        updateContent.mutateAsync({ key: 'privacy_policy_purpose', content: data.privacy_purpose }),
+        updateContent.mutateAsync({ key: 'privacy_policy_contact', content: data.privacy_contact }),
       ]);
       toast.success('Indhold opdateret!');
       reset(data);
@@ -160,6 +180,53 @@ export function AdminCMS() {
                 id="payment_info_content"
                 {...register('payment_info_content')}
                 placeholder="12345678"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Privacy Policy Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Privatlivspolitik</CardTitle>
+            <CardDescription>
+              Rediger indholdet på privatlivspolitik-siden
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="privacy_intro">Introduktion (dataansvarlig)</Label>
+              <Textarea
+                id="privacy_intro"
+                {...register('privacy_intro')}
+                placeholder="Beskrivelse af dataansvarlig..."
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="privacy_data_collected">Indsamlede oplysninger (kommasepareret)</Label>
+              <Textarea
+                id="privacy_data_collected"
+                {...register('privacy_data_collected')}
+                placeholder="Navn, E-mailadresse, Oplysninger om reservationer"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label htmlFor="privacy_purpose">Formål med behandlingen (kommasepareret)</Label>
+              <Textarea
+                id="privacy_purpose"
+                {...register('privacy_purpose')}
+                placeholder="Administration af medlemskab, Håndtering af reservationer..."
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label htmlFor="privacy_contact">Kontaktoplysninger</Label>
+              <Input
+                id="privacy_contact"
+                {...register('privacy_contact')}
+                placeholder="kontakt@example.dk"
               />
             </div>
           </CardContent>

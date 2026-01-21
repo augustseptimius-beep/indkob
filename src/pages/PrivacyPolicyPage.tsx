@@ -1,6 +1,39 @@
 import { Layout } from '@/components/layout/Layout';
+import { useCMSContent } from '@/hooks/useCMS';
 
 export default function PrivacyPolicyPage() {
+  const { data: content, isLoading } = useCMSContent();
+
+  const dataCollected = content?.['privacy_policy_data_collected']?.content?.split(',').map(s => s.trim()).filter(Boolean) || [
+    'Navn',
+    'E-mailadresse',
+    'Oplysninger om dine reservationer og køb'
+  ];
+
+  const purposes = content?.['privacy_policy_purpose']?.content?.split(',').map(s => s.trim()).filter(Boolean) || [
+    'Administration af dit medlemskab og brugeroprettelse',
+    'Håndtering af dine reservationer og bestillinger',
+    'Kommunikation om ordrestatus og leveringer',
+    'Udsendelse af notifikationer vedrørende dine reserverede varer'
+  ];
+
+  const introText = content?.['privacy_policy_intro']?.content || 
+    'Klitmøllers Indkøbsforening er dataansvarlig for behandlingen af de personoplysninger, vi modtager om dig. Har du spørgsmål til vores behandling af dine oplysninger, er du velkommen til at kontakte os.';
+
+  const contactInfo = content?.['privacy_policy_contact']?.content || 'kontakt@klitmoellers-indkoebsforening.dk';
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container-wide py-12">
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="container-wide py-12">
@@ -14,9 +47,7 @@ export default function PrivacyPolicyPage() {
           <section className="mb-8">
             <h2 className="font-serif text-xl font-semibold mb-4">1. Dataansvarlig</h2>
             <p className="text-muted-foreground">
-              Klitmøllers Indkøbsforening er dataansvarlig for behandlingen af de personoplysninger, 
-              vi modtager om dig. Har du spørgsmål til vores behandling af dine oplysninger, 
-              er du velkommen til at kontakte os.
+              {introText}
             </p>
           </section>
 
@@ -26,9 +57,9 @@ export default function PrivacyPolicyPage() {
               Vi indsamler følgende personoplysninger, når du opretter en konto hos os:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2">
-              <li>Navn</li>
-              <li>E-mailadresse</li>
-              <li>Oplysninger om dine reservationer og køb</li>
+              {dataCollected.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
             </ul>
           </section>
 
@@ -38,10 +69,9 @@ export default function PrivacyPolicyPage() {
               Vi behandler dine personoplysninger til følgende formål:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2">
-              <li>Administration af dit medlemskab og brugeroprettelse</li>
-              <li>Håndtering af dine reservationer og bestillinger</li>
-              <li>Kommunikation om ordrestatus og leveringer</li>
-              <li>Udsendelse af notifikationer vedrørende dine reserverede varer</li>
+              {purposes.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
             </ul>
           </section>
 
@@ -99,7 +129,17 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="font-serif text-xl font-semibold mb-4">9. Klageadgang</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">9. Kontakt</h2>
+            <p className="text-muted-foreground">
+              Har du spørgsmål til vores behandling af dine personoplysninger, kan du kontakte os på:{' '}
+              <a href={`mailto:${contactInfo}`} className="text-primary hover:underline">
+                {contactInfo}
+              </a>
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="font-serif text-xl font-semibold mb-4">10. Klageadgang</h2>
             <p className="text-muted-foreground">
               Hvis du er utilfreds med vores behandling af dine personoplysninger, kan du klage til 
               Datatilsynet. Du finder kontaktoplysninger på{' '}
@@ -110,7 +150,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-4">10. Ændringer</h2>
+            <h2 className="font-serif text-xl font-semibold mb-4">11. Ændringer</h2>
             <p className="text-muted-foreground">
               Vi forbeholder os retten til at opdatere denne privatlivspolitik. Ved væsentlige 
               ændringer vil vi informere dig via e-mail eller på hjemmesiden.
