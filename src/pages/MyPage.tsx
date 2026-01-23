@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyReservations } from '@/hooks/useReservations';
+import { useCMSContent } from '@/hooks/useCMS';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Package, CreditCard } from 'lucide-react';
+import { Package, CreditCard, Smartphone } from 'lucide-react';
 
 export default function MyPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { data: reservations, isLoading } = useMyReservations();
+  const { data: cmsContent } = useCMSContent();
 
   if (authLoading) {
     return <Layout><div className="container-narrow py-12"><Skeleton className="h-64" /></div></Layout>;
@@ -23,6 +25,10 @@ export default function MyPage() {
     const price = r.product?.price_per_unit || 0;
     return sum + price * r.quantity;
   }, 0) || 0;
+
+  // Check if any reservations are ready for payment (ordered or ready status)
+  const hasPendingPayment = reservations?.some(r => r.status === 'ordered' || r.status === 'ready');
+  const paymentInfo = cmsContent?.['payment_info'];
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -55,6 +61,30 @@ export default function MyPage() {
             </p>
           </CardContent>
         </Card>
+
+        {/* Payment Instructions - shown when reservations are ready */}
+        {hasPendingPayment && paymentInfo?.content && (
+          <Card className="mb-8 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30">
+            <CardContent className="py-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                  <Smartphone className="w-6 h-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-green-800 dark:text-green-300">
+                    {paymentInfo.title || 'Betal med MobilePay'}
+                  </h3>
+                  <p className="text-green-700 dark:text-green-400 mt-1">
+                    Overfør til MobilePay: <span className="font-bold text-lg">{paymentInfo.content}</span>
+                  </p>
+                  <p className="text-sm text-green-600 dark:text-green-500 mt-2">
+                    Skriv dit fulde navn i beskedfeltet ved overførsel
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <h2 className="font-serif text-xl font-semibold mb-4">Mine reservationer</h2>
 
