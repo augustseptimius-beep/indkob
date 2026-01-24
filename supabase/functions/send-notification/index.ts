@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { encode as hexEncode } from "https://deno.land/std@0.190.0/encoding/hex.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-signature",
 };
 
 // Input validation schema
@@ -16,6 +17,37 @@ const notificationSchema = z.object({
   })
 });
 
+// HMAC signature verification
+async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+    const signatureBytes = new Uint8Array(signatureBuffer);
+    const hexBytes = hexEncode(signatureBytes);
+    const expectedSignature = new TextDecoder().decode(hexBytes);
+    
+    // Constant-time comparison to prevent timing attacks
+    if (signature.length !== expectedSignature.length) {
+      return false;
+    }
+    let result = 0;
+    for (let i = 0; i < signature.length; i++) {
+      result |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+    }
+    return result === 0;
+  } catch (error) {
+    console.error("Signature verification error:", error);
+    return false;
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -23,6 +55,26 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Get signing key for HMAC verification
+    const SIGNING_KEY = Deno.env.get("EDGE_FUNCTION_SIGNING_KEY");
+    if (!SIGNING_KEY) {
+      console.error("EDGE_FUNCTION_SIGNING_KEY is not configured");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Verify HMAC signature
+    const signature = req.headers.get("X-Signature");
+    if (!signature) {
+      console.error("Missing X-Signature header");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not configured");
@@ -38,9 +90,11 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse and validate input
-    let rawBody;
+    let rawBody: string;
+    let parsedBody;
     try {
-      rawBody = await req.json();
+      rawBody = await req.text();
+      parsedBody = JSON.parse(rawBody);
     } catch {
       console.error("Invalid JSON in request body");
       return new Response(
@@ -49,7 +103,19 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const validation = notificationSchema.safeParse(rawBody);
+    // Verify HMAC signature against raw body
+    const isValidSignature = await verifySignature(rawBody, signature, SIGNING_KEY);
+    if (!isValidSignature) {
+      console.error("Invalid HMAC signature");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("HMAC signature verified successfully");
+
+    const validation = notificationSchema.safeParse(parsedBody);
     if (!validation.success) {
       console.error("Input validation failed:", validation.error.errors);
       return new Response(
