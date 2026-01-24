@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,9 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const initialMode = searchParams.get('mode') === 'signup' ? false : true;
+  const [isLogin, setIsLogin] = useState(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -19,6 +21,12 @@ export default function AuthPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
+
+  // Update mode when URL changes
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    setIsLogin(mode !== 'signup');
+  }, [searchParams]);
 
   // Redirect if already logged in
   if (user) {
