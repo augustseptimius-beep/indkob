@@ -301,7 +301,7 @@ export type Database = {
         Returns: boolean
       }
       upsert_vault_secret: {
-        Args: { secret_name: string; secret_value: string }
+        Args: { p_secret_name: string; p_secret_value: string }
         Returns: undefined
       }
     }
