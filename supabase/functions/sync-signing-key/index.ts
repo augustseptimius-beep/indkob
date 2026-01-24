@@ -96,8 +96,8 @@ serve(async (req: Request) => {
 
     // Use the secure database function to insert the secret into vault
     const { error: rpcError } = await adminClient.rpc('upsert_vault_secret', {
-      secret_name: 'edge_function_signing_key',
-      secret_value: signingKey
+      p_secret_name: 'edge_function_signing_key',
+      p_secret_value: signingKey
     });
 
     if (rpcError) {
