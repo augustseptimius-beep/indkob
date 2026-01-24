@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useCMSContent, useUpdateCMSContent } from '@/hooks/useCMS';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,24 +11,28 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Save, RefreshCw } from 'lucide-react';
 
-interface CMSFormValues {
-  hero_title: string;
-  hero_content: string;
-  how_it_works_title: string;
-  how_it_works_content: string;
-  payment_info_title: string;
-  payment_info_content: string;
-  privacy_intro: string;
-  privacy_data_collected: string;
-  privacy_purpose: string;
-  privacy_contact: string;
-}
+// Zod schema for CMS content validation - prevents overly long content and ensures data integrity
+const cmsSchema = z.object({
+  hero_title: z.string().max(200, 'Overskrift må max være 200 tegn').default(''),
+  hero_content: z.string().max(2000, 'Brødtekst må max være 2000 tegn').default(''),
+  how_it_works_title: z.string().max(200, 'Overskrift må max være 200 tegn').default(''),
+  how_it_works_content: z.string().max(2000, 'Brødtekst må max være 2000 tegn').default(''),
+  payment_info_title: z.string().max(100, 'Titel må max være 100 tegn').default(''),
+  payment_info_content: z.string().max(50, 'MobilePay-nummer må max være 50 tegn').default(''),
+  privacy_intro: z.string().max(5000, 'Introduktion må max være 5000 tegn').default(''),
+  privacy_data_collected: z.string().max(2000, 'Indsamlede data må max være 2000 tegn').default(''),
+  privacy_purpose: z.string().max(3000, 'Formål må max være 3000 tegn').default(''),
+  privacy_contact: z.string().max(500, 'Kontaktinfo må max være 500 tegn').default(''),
+});
+
+type CMSFormValues = z.infer<typeof cmsSchema>;
 
 export function AdminCMS() {
   const { data: cmsContent, isLoading, refetch } = useCMSContent();
   const updateContent = useUpdateCMSContent();
 
-  const { register, handleSubmit, reset, formState: { isDirty } } = useForm<CMSFormValues>({
+  const { register, handleSubmit, reset, formState: { isDirty, errors } } = useForm<CMSFormValues>({
+    resolver: zodResolver(cmsSchema),
     defaultValues: {
       hero_title: '',
       hero_content: '',
@@ -114,7 +120,9 @@ export function AdminCMS() {
                 id="hero_title"
                 {...register('hero_title')}
                 placeholder="Velkommen til..."
+                maxLength={200}
               />
+              {errors.hero_title && <p className="text-sm text-destructive mt-1">{errors.hero_title.message}</p>}
             </div>
             <div>
               <Label htmlFor="hero_content">Brødtekst</Label>
@@ -123,7 +131,9 @@ export function AdminCMS() {
                 {...register('hero_content')}
                 placeholder="Beskriv konceptet her..."
                 rows={4}
+                maxLength={2000}
               />
+              {errors.hero_content && <p className="text-sm text-destructive mt-1">{errors.hero_content.message}</p>}
             </div>
           </CardContent>
         </Card>
@@ -143,7 +153,9 @@ export function AdminCMS() {
                 id="how_it_works_title"
                 {...register('how_it_works_title')}
                 placeholder="Sådan fungerer det"
+                maxLength={200}
               />
+              {errors.how_it_works_title && <p className="text-sm text-destructive mt-1">{errors.how_it_works_title.message}</p>}
             </div>
             <div>
               <Label htmlFor="how_it_works_content">Brødtekst</Label>
@@ -152,7 +164,9 @@ export function AdminCMS() {
                 {...register('how_it_works_content')}
                 placeholder="Forklar processen..."
                 rows={4}
+                maxLength={2000}
               />
+              {errors.how_it_works_content && <p className="text-sm text-destructive mt-1">{errors.how_it_works_content.message}</p>}
             </div>
           </CardContent>
         </Card>
@@ -172,7 +186,9 @@ export function AdminCMS() {
                 id="payment_info_title"
                 {...register('payment_info_title')}
                 placeholder="Betalingsinfo"
+                maxLength={100}
               />
+              {errors.payment_info_title && <p className="text-sm text-destructive mt-1">{errors.payment_info_title.message}</p>}
             </div>
             <div>
               <Label htmlFor="payment_info_content">MobilePay-nummer</Label>
@@ -180,7 +196,9 @@ export function AdminCMS() {
                 id="payment_info_content"
                 {...register('payment_info_content')}
                 placeholder="12345678"
+                maxLength={50}
               />
+              {errors.payment_info_content && <p className="text-sm text-destructive mt-1">{errors.payment_info_content.message}</p>}
             </div>
           </CardContent>
         </Card>
@@ -201,7 +219,9 @@ export function AdminCMS() {
                 {...register('privacy_intro')}
                 placeholder="Beskrivelse af dataansvarlig..."
                 rows={3}
+                maxLength={5000}
               />
+              {errors.privacy_intro && <p className="text-sm text-destructive mt-1">{errors.privacy_intro.message}</p>}
             </div>
             <div>
               <Label htmlFor="privacy_data_collected">Indsamlede oplysninger (kommasepareret)</Label>
@@ -210,7 +230,9 @@ export function AdminCMS() {
                 {...register('privacy_data_collected')}
                 placeholder="Navn, E-mailadresse, Oplysninger om reservationer"
                 rows={2}
+                maxLength={2000}
               />
+              {errors.privacy_data_collected && <p className="text-sm text-destructive mt-1">{errors.privacy_data_collected.message}</p>}
             </div>
             <div>
               <Label htmlFor="privacy_purpose">Formål med behandlingen (kommasepareret)</Label>
@@ -219,7 +241,9 @@ export function AdminCMS() {
                 {...register('privacy_purpose')}
                 placeholder="Administration af medlemskab, Håndtering af reservationer..."
                 rows={3}
+                maxLength={3000}
               />
+              {errors.privacy_purpose && <p className="text-sm text-destructive mt-1">{errors.privacy_purpose.message}</p>}
             </div>
             <div>
               <Label htmlFor="privacy_contact">Kontaktoplysninger</Label>
@@ -227,7 +251,9 @@ export function AdminCMS() {
                 id="privacy_contact"
                 {...register('privacy_contact')}
                 placeholder="kontakt@example.dk"
+                maxLength={500}
               />
+              {errors.privacy_contact && <p className="text-sm text-destructive mt-1">{errors.privacy_contact.message}</p>}
             </div>
           </CardContent>
         </Card>
