@@ -92,74 +92,23 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log('sync-signing-key: Admin verified, syncing to vault...');
+    console.log('sync-signing-key: Admin verified, syncing to vault via database function...');
 
-    // Use service role to insert into vault
-    // First, try to delete any existing secret with the same name
-    const { error: deleteError } = await adminClient.rpc('vault_delete_secret', {
-      secret_name: 'edge_function_signing_key'
-    }).maybeSingle();
-    
-    // Ignore delete errors (secret might not exist)
-    if (deleteError) {
-      console.log('sync-signing-key: No existing secret to delete (this is normal for first run)');
-    }
-
-    // Insert the new secret into vault
-    const { data: insertData, error: insertError } = await adminClient.rpc('vault_insert_secret', {
+    // Use the secure database function to insert the secret into vault
+    const { error: rpcError } = await adminClient.rpc('upsert_vault_secret', {
       secret_name: 'edge_function_signing_key',
       secret_value: signingKey
     });
 
-    if (insertError) {
-      console.error('sync-signing-key: Error inserting into vault', insertError);
-      
-      // Try alternative method using direct SQL via REST API
-      // This is a fallback if the RPC functions don't exist
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/vault_insert_secret`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'apikey': serviceRoleKey
-        },
-        body: JSON.stringify({
-          secret_name: 'edge_function_signing_key',
-          secret_value: signingKey
-        })
-      });
-
-      if (!response.ok) {
-        // Final fallback: direct insert to vault.secrets
-        console.log('sync-signing-key: Trying direct vault insert...');
-        
-        const directInsert = await fetch(`${supabaseUrl}/rest/v1/vault.secrets`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${serviceRoleKey}`,
-            'apikey': serviceRoleKey,
-            'Prefer': 'resolution=merge-duplicates'
-          },
-          body: JSON.stringify({
-            name: 'edge_function_signing_key',
-            secret: signingKey
-          })
-        });
-
-        if (!directInsert.ok) {
-          const errorText = await directInsert.text();
-          console.error('sync-signing-key: Direct vault insert failed', errorText);
-          return new Response(
-            JSON.stringify({ 
-              error: 'Failed to insert secret into vault', 
-              details: 'The vault extension may need to be enabled. Please contact support.',
-              technical: errorText
-            }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      }
+    if (rpcError) {
+      console.error('sync-signing-key: Error calling upsert_vault_secret', rpcError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to sync secret to vault', 
+          details: rpcError.message 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('sync-signing-key: Successfully synced signing key to vault!');
@@ -167,7 +116,7 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Signing key successfully synced to vault. Email notifications will now work when product status changes.' 
+        message: 'Signeringsnøgle synkroniseret til vault. Email-notifikationer vil nu fungere når produktstatus ændres.' 
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
