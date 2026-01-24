@@ -2,3 +2,6 @@ project_id = "xekuhgwajypsblglrctp"
 
 [functions.send-notification]
 verify_jwt = false
+
+[functions.sync-signing-key]
+verify_jwt = false
