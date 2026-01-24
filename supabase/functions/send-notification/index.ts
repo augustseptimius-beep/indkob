@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,10 +8,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface NotificationRequest {
-  productId: string;
-  notificationType: "ordered" | "arrived";
-}
+// Input validation schema
+const notificationSchema = z.object({
+  productId: z.string().uuid("Invalid product ID format"),
+  notificationType: z.enum(["ordered", "arrived"], {
+    errorMap: () => ({ message: "Invalid notification type. Must be 'ordered' or 'arrived'" })
+  })
+});
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -21,7 +25,11 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not configured");
+      console.error("RESEND_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -29,7 +37,28 @@ const handler = async (req: Request): Promise<Response> => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { productId, notificationType }: NotificationRequest = await req.json();
+    // Parse and validate input
+    let rawBody;
+    try {
+      rawBody = await req.json();
+    } catch {
+      console.error("Invalid JSON in request body");
+      return new Response(
+        JSON.stringify({ error: "Invalid request format" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const validation = notificationSchema.safeParse(rawBody);
+    if (!validation.success) {
+      console.error("Input validation failed:", validation.error.errors);
+      return new Response(
+        JSON.stringify({ error: "Invalid request parameters" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const { productId, notificationType } = validation.data;
 
     console.log(`Sending ${notificationType} notification for product ${productId}`);
 
@@ -41,8 +70,11 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (productError || !product) {
-      console.error("Product not found:", productError);
-      throw new Error("Product not found");
+      console.error("Product not found");
+      return new Response(
+        JSON.stringify({ error: "Resource not found" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     console.log(`Product found: ${product.title}`);
