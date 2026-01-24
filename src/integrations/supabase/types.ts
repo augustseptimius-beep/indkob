@@ -300,6 +300,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      upsert_vault_secret: {
+        Args: { secret_name: string; secret_value: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "member"
