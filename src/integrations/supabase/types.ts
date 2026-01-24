@@ -203,6 +203,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          paid: boolean
+          paid_at: string | null
           product_id: string
           quantity: number
           status: string
@@ -212,6 +214,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          paid?: boolean
+          paid_at?: string | null
           product_id: string
           quantity?: number
           status?: string
@@ -221,6 +225,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          paid?: boolean
+          paid_at?: string | null
           product_id?: string
           quantity?: number
           status?: string

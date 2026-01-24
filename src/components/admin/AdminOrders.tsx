@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { useProducts, useUpdateProduct } from '@/hooks/useProducts';
-import { useAllReservations } from '@/hooks/useReservations';
+import { useAllReservations, useUpdateReservation } from '@/hooks/useReservations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Check, Package, Truck, Mail } from 'lucide-react';
+import { Check, Package, Truck, Mail, CreditCard, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function AdminOrders() {
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: allReservations, isLoading: reservationsLoading } = useAllReservations();
   const updateProduct = useUpdateProduct();
+  const updateReservation = useUpdateReservation();
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
 
   const isLoading = productsLoading || reservationsLoading;
 
@@ -33,6 +35,11 @@ export function AdminOrders() {
   const orderedProducts = products?.filter((p) => p.status === 'ordered');
   const arrivedProducts = products?.filter((p) => p.status === 'arrived');
 
+  // Get all unpaid reservations for arrived products
+  const unpaidReservations = allReservations?.filter(
+    (r) => (r.status === 'ordered' || r.status === 'ready') && !r.paid
+  ) || [];
+
   const updateProductStatus = async (productId: string, newStatus: 'ordered' | 'arrived') => {
     setUpdatingStatus(productId);
     try {
@@ -51,6 +58,23 @@ export function AdminOrders() {
       toast.error('Kunne ikke opdatere status', { description: error.message });
     } finally {
       setUpdatingStatus(null);
+    }
+  };
+
+  const markReservationAsPaid = async (reservationId: string) => {
+    setMarkingPaid(reservationId);
+    try {
+      await updateReservation.mutateAsync({ 
+        id: reservationId, 
+        paid: true, 
+        paid_at: new Date().toISOString() 
+      });
+      toast.success('Reservation markeret som betalt');
+    } catch (error: any) {
+      console.error('Error marking reservation as paid:', error);
+      toast.error('Kunne ikke markere som betalt', { description: error.message });
+    } finally {
+      setMarkingPaid(null);
     }
   };
 
@@ -82,6 +106,58 @@ export function AdminOrders() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pending Payments Section */}
+      {unpaidReservations.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-amber-600" />
+            Afventende betalinger ({unpaidReservations.length})
+          </h2>
+          <div className="grid gap-4">
+            {unpaidReservations.map((reservation) => {
+              const product = products?.find(p => p.id === reservation.product_id);
+              const totalPrice = (product?.price_per_unit || 0) * reservation.quantity;
+              
+              return (
+                <Card key={reservation.id} className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      {product?.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt={product.title}
+                          className="w-12 h-12 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold">{product?.title}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {reservation.quantity} {product?.unit_name}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Bruger: {reservation.user_id.slice(0, 8)}... • {totalPrice.toFixed(2)} kr
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => markReservationAsPaid(reservation.id)}
+                        disabled={markingPaid === reservation.id}
+                        size="sm"
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        {markingPaid === reservation.id ? 'Markerer...' : 'Marker betalt'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Ready to Order */}
       <section>
@@ -201,30 +277,47 @@ export function AdminOrders() {
         </h2>
         {arrivedProducts && arrivedProducts.length > 0 ? (
           <div className="grid gap-4">
-            {arrivedProducts.map((product) => (
-              <Card key={product.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    {product.image_url && (
-                      <img
-                        src={product.image_url}
-                        alt={product.title}
-                        className="w-16 h-16 object-cover rounded-lg"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{product.title}</h3>
-                        {getStatusBadge(product.status)}
+            {arrivedProducts.map((product) => {
+              const productReservations = reservationsByProduct?.[product.id] || [];
+              const paidCount = productReservations.filter(r => r.paid).length;
+              const unpaidCount = productReservations.length - paidCount;
+              
+              return (
+                <Card key={product.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      {product.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt={product.title}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold">{product.title}</h3>
+                          {getStatusBadge(product.status)}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Klar til afhentning • {productReservations.length} reservationer
+                        </p>
+                        <div className="flex items-center gap-4 mt-1 text-xs">
+                          <span className="text-green-600 flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            {paidCount} betalt
+                          </span>
+                          {unpaidCount > 0 && (
+                            <span className="text-amber-600">
+                              {unpaidCount} afventer betaling
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Klar til afhentning • {reservationsByProduct?.[product.id]?.length || 0} reservationer
-                      </p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         ) : (
           <Card>

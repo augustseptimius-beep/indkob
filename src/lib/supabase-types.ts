@@ -58,6 +58,8 @@ export interface Reservation {
   product_id: string;
   quantity: number;
   status: ReservationStatus;
+  paid: boolean;
+  paid_at: string | null;
   created_at: string;
   updated_at: string;
   product?: Product;
