@@ -189,10 +189,17 @@ ${markdown.substring(0, 8000)}`;
     }
 
     // Validate and normalize the data
+    let price = typeof productData.price === 'number' ? productData.price : null;
+    
+    // Normalize price: if it looks like øre (> 1000 for typical grocery items), convert to kr
+    if (price !== null && price > 500) {
+      price = price / 100;
+    }
+    
     const normalizedData: ProductData = {
       title: productData.title || metadata.title || 'Ukendt produkt',
       description: productData.description || '',
-      price: typeof productData.price === 'number' ? productData.price : null,
+      price: price,
       image_url: productData.image_url || null,
       origin_country: productData.origin_country || null,
       supplier_name: productData.supplier_name || null,
