@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useProducts, useCategories, useProductTags, useDeleteProduct } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Download } from 'lucide-react';
 import { ProductFormDialog } from './ProductFormDialog';
+import { ProductImportDialog } from './ProductImportDialog';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -17,6 +18,17 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { Product } from '@/lib/supabase-types';
 
+interface ImportedProductData {
+  title: string;
+  description: string;
+  price: number | null;
+  image_url: string | null;
+  origin_country: string | null;
+  supplier_name: string | null;
+  unit_name: string;
+  is_organic: boolean;
+}
+
 export function AdminProducts() {
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
@@ -24,8 +36,10 @@ export function AdminProducts() {
   const deleteProduct = useDeleteProduct();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [importedData, setImportedData] = useState<{ data: ImportedProductData; sourceUrl: string } | null>(null);
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -42,6 +56,12 @@ export function AdminProducts() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingProduct(null);
+    setImportedData(null);
+  };
+
+  const handleImport = (data: ImportedProductData, sourceUrl: string) => {
+    setImportedData({ data, sourceUrl });
+    setIsFormOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -72,10 +92,16 @@ export function AdminProducts() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Produkter ({products?.length || 0})</h2>
-        <Button onClick={() => setIsFormOpen(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Tilføj produkt
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsImportOpen(true)} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Importer fra URL
+          </Button>
+          <Button onClick={() => setIsFormOpen(true)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Tilføj produkt
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">
@@ -141,6 +167,14 @@ export function AdminProducts() {
         product={editingProduct}
         categories={categories || []}
         tags={tags || []}
+        importedData={importedData?.data}
+        importedSourceUrl={importedData?.sourceUrl}
+      />
+
+      <ProductImportDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        onImport={handleImport}
       />
 
       <AlertDialog open={!!deletingProduct} onOpenChange={() => setDeletingProduct(null)}>

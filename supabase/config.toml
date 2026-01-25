@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.sync-signing-key]
 verify_jwt = false
+
+[functions.scrape-product]
+verify_jwt = false

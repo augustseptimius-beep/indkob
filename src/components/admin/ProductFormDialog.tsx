@@ -48,12 +48,25 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
+interface ImportedProductData {
+  title: string;
+  description: string;
+  price: number | null;
+  image_url: string | null;
+  origin_country: string | null;
+  supplier_name: string | null;
+  unit_name: string;
+  is_organic: boolean;
+}
+
 interface ProductFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: Product | null;
   categories: Category[];
   tags: ProductTag[];
+  importedData?: ImportedProductData;
+  importedSourceUrl?: string;
 }
 
 export function ProductFormDialog({
@@ -61,6 +74,8 @@ export function ProductFormDialog({
   onOpenChange,
   product,
   categories,
+  importedData,
+  importedSourceUrl,
 }: ProductFormDialogProps) {
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
@@ -101,6 +116,23 @@ export function ProductFormDialog({
         status: product.status,
         is_organic: product.is_organic || false,
       });
+    } else if (importedData) {
+      // Pre-fill form with imported data
+      form.reset({
+        title: importedData.title || '',
+        description: importedData.description || '',
+        image_url: importedData.image_url || '',
+        supplier_url: importedSourceUrl || '',
+        origin_country: importedData.origin_country || '',
+        category_id: '',
+        price_per_unit: importedData.price || 0,
+        unit_name: importedData.unit_name || 'stk',
+        target_quantity: 10,
+        minimum_purchase: 1,
+        supplier_name: importedData.supplier_name || '',
+        status: 'open',
+        is_organic: importedData.is_organic || false,
+      });
     } else {
       form.reset({
         title: '',
@@ -118,7 +150,7 @@ export function ProductFormDialog({
         is_organic: false,
       });
     }
-  }, [product, form]);
+  }, [product, importedData, importedSourceUrl, form]);
 
   const onSubmit = async (values: ProductFormValues) => {
     const productData = {
@@ -144,8 +176,13 @@ export function ProductFormDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {product ? 'Rediger produkt' : 'Tilføj nyt produkt'}
+            {product ? 'Rediger produkt' : importedData ? 'Importeret produkt' : 'Tilføj nyt produkt'}
           </DialogTitle>
+          {importedData && (
+            <p className="text-sm text-muted-foreground">
+              Data er hentet automatisk. Gennemgå og juster efter behov.
+            </p>
+          )}
         </DialogHeader>
 
         <Form {...form}>
