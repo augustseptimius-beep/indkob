@@ -19,6 +19,7 @@ export interface Product {
   supplier_name: string | null;
   status: ProductStatus;
   is_organic: boolean;
+  comparison_price: number | null;
   created_at: string;
   updated_at: string;
   category?: Category | null;
