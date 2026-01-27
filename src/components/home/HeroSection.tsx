@@ -2,12 +2,11 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useCMSContent } from '@/hooks/useCMS';
 import { ArrowRight, Users, Leaf, Package } from 'lucide-react';
-
 export function HeroSection() {
-  const { data: content } = useCMSContent();
-
-  return (
-    <section className="relative overflow-hidden">
+  const {
+    data: content
+  } = useCMSContent();
+  return <section className="relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/20" />
       
@@ -31,8 +30,7 @@ export function HeroSection() {
 
           {/* Description */}
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-slide-up delay-200">
-            {content?.hero_description?.content ||
-              'Vi er en lokal indkøbsforening, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser.'}
+            {content?.hero_description?.content || 'Vi er en lokal indkøbsforening, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser.'}
           </p>
 
           {/* CTAs */}
@@ -55,7 +53,7 @@ export function HeroSection() {
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Package className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-serif text-lg font-semibold mb-2">Store Partier</h3>
+            <h3 className="font-serif text-lg font-semibold mb-2">Store partier</h3>
             <p className="text-muted-foreground text-sm">
               Køb kvalitetsvarer i store mængder til bedre priser
             </p>
@@ -64,7 +62,7 @@ export function HeroSection() {
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Users className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-serif text-lg font-semibold mb-2">Del Omkostningerne</h3>
+            <h3 className="font-serif text-lg font-semibold mb-2">Del omkostningerne</h3>
             <p className="text-muted-foreground text-sm">
               Gå sammen med naboer og venner om indkøb
             </p>
@@ -80,6 +78,5 @@ export function HeroSection() {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 }
