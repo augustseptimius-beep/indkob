@@ -48,6 +48,41 @@ async function verifySignature(body: string, signature: string, secret: string):
   }
 }
 
+// Replace template variables with actual values
+function replaceTemplateVariables(
+  template: string,
+  variables: Record<string, string>
+): string {
+  let result = template;
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    result = result.replace(regex, value);
+  }
+  return result;
+}
+
+// Build the email wrapper with site branding
+function wrapEmailContent(bodyHtml: string): string {
+  return `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+      <div style="border-bottom: 2px solid #5c6b5a; padding-bottom: 16px; margin-bottom: 24px;">
+        <h1 style="color: #5c6b5a; font-size: 24px; margin: 0; font-family: 'Playfair Display', Georgia, serif;">
+          Klitmøllers Indkøbsforening
+        </h1>
+      </div>
+      
+      <div style="color: #333;">
+        ${bodyHtml}
+      </div>
+      
+      <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; color: #666; font-size: 14px;">
+        <p style="margin: 0;">Med venlig hilsen,</p>
+        <p style="margin: 4px 0 0 0; font-weight: bold;">Klitmøllers Indkøbsforening</p>
+      </div>
+    </div>
+  `;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -145,6 +180,28 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Product found: ${product.title}`);
 
+    // Get email template from database
+    const templateKey = notificationType === "ordered" ? "product_ordered" : "product_arrived";
+    const { data: emailTemplate, error: templateError } = await supabase
+      .from("email_templates")
+      .select("*")
+      .eq("key", templateKey)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (templateError) {
+      console.error("Error fetching email template:", templateError);
+    }
+
+    // Get MobilePay number from CMS
+    const { data: paymentInfo } = await supabase
+      .from("cms_content")
+      .select("content")
+      .eq("key", "payment_info")
+      .maybeSingle();
+    
+    const mobilepayNumber = paymentInfo?.content || "xxx-xxxxx";
+
     // Get all reservations for this product
     const { data: reservations, error: reservationsError } = await supabase
       .from("reservations")
@@ -193,22 +250,6 @@ const handler = async (req: Request): Promise<Response> => {
     // Create a map of user_id to profile
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-    // Prepare email content based on notification type
-    const subject = notificationType === "ordered"
-      ? `🛒 ${product.title} er nu bestilt!`
-      : `📦 ${product.title} er kommet hjem!`;
-
-    const statusText = notificationType === "ordered"
-      ? "er nu bestilt hos leverandøren"
-      : "er ankommet og klar til afhentning";
-
-    const paymentNote = notificationType === "arrived"
-      ? `<p style="background-color: #fef3c7; padding: 16px; border-radius: 8px; margin-top: 20px;">
-          <strong>💳 Betaling:</strong> Betal venligst via MobilePay til xxx-xxxxx. 
-          Husk at skrive dit navn i beskeden.
-        </p>`
-      : "";
-
     // Send emails to all users who reserved
     const emailPromises = reservations
       .filter(r => {
@@ -221,10 +262,44 @@ const handler = async (req: Request): Promise<Response> => {
         const userName = profile.full_name || "Kære medlem";
         const totalPrice = (reservation.quantity * product.price_per_unit).toFixed(2);
 
-        const html = `
-          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #5c6b5a;">Klitmøllers Indkøbsforening</h1>
-            <h2 style="color: #333;">${subject}</h2>
+        // Prepare template variables
+        const variables: Record<string, string> = {
+          user_name: userName,
+          user_email: userEmail,
+          product_title: product.title,
+          quantity: reservation.quantity.toString(),
+          unit_name: product.unit_name,
+          price_per_unit: product.price_per_unit.toString(),
+          total_price: totalPrice,
+          mobilepay_number: mobilepayNumber,
+          paid_at: new Date().toLocaleDateString('da-DK'),
+        };
+
+        let subject: string;
+        let bodyHtml: string;
+
+        if (emailTemplate) {
+          // Use template from database
+          subject = replaceTemplateVariables(emailTemplate.subject, variables);
+          bodyHtml = replaceTemplateVariables(emailTemplate.body_html, variables);
+        } else {
+          // Fallback to hardcoded template
+          subject = notificationType === "ordered"
+            ? `🛒 ${product.title} er nu bestilt!`
+            : `📦 ${product.title} er kommet hjem!`;
+
+          const statusText = notificationType === "ordered"
+            ? "er nu bestilt hos leverandøren"
+            : "er ankommet og klar til afhentning";
+
+          const paymentNote = notificationType === "arrived"
+            ? `<p style="background-color: #fef3c7; padding: 16px; border-radius: 8px; margin-top: 20px;">
+                <strong>💳 Betaling:</strong> Betal venligst via MobilePay til ${mobilepayNumber}. 
+                Husk at skrive dit navn i beskeden.
+              </p>`
+            : "";
+
+          bodyHtml = `
             <p>Hej ${userName},</p>
             <p>Vi vil gerne informere dig om, at <strong>${product.title}</strong> ${statusText}.</p>
             
@@ -237,13 +312,11 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             ${paymentNote}
-            
-            <p style="margin-top: 30px; color: #666;">
-              Med venlig hilsen,<br>
-              Klitmøllers Indkøbsforening
-            </p>
-          </div>
-        `;
+          `;
+        }
+
+        // Wrap content with branded layout
+        const fullHtml = wrapEmailContent(bodyHtml);
 
         console.log(`Sending email to ${userEmail}`);
 
@@ -257,7 +330,7 @@ const handler = async (req: Request): Promise<Response> => {
             from: "Klitmøllers Indkøbsforening <onboarding@resend.dev>",
             to: [userEmail],
             subject,
-            html,
+            html: fullHtml,
           }),
         });
 
