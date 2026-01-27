@@ -2,20 +2,44 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useCMSContent } from '@/hooks/useCMS';
 import { ArrowRight, Users, Leaf, Package } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 export function HeroSection() {
-  const {
-    data: content
-  } = useCMSContent();
+  const { data: content } = useCMSContent();
+  
+  const { data: memberCount } = useQuery({
+    queryKey: ['member-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   return <section className="relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/20" />
       
       <div className="container-wide relative py-20 md:py-32">
         <div className="max-w-3xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
-            <Leaf className="w-4 h-4" />
-            <span className="text-sm font-medium">Fællesskab & Bæredygtighed</span>
+          {/* Badge with member count */}
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <Leaf className="w-4 h-4" />
+              <span className="text-sm font-medium">Fællesskab & Bæredygtighed</span>
+            </div>
+            {memberCount !== undefined && memberCount > 0 && (
+              <>
+                <span className="w-px h-4 bg-primary/30" />
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm font-semibold">{memberCount} medlemmer</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Title */}
