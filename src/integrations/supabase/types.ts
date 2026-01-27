@@ -56,6 +56,45 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          subject: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          subject: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          subject?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_tag_relations: {
         Row: {
           product_id: string

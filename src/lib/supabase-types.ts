@@ -82,3 +82,16 @@ export interface CMSContent {
   content: string | null;
   updated_at: string;
 }
+
+export interface EmailTemplate {
+  id: string;
+  key: string;
+  name: string;
+  subject: string;
+  body_html: string;
+  description: string | null;
+  trigger_type: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

@@ -3,11 +3,12 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, ClipboardList, FileText, Users, Key, Loader2 } from 'lucide-react';
+import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail } from 'lucide-react';
 import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminOrders } from '@/components/admin/AdminOrders';
 import { AdminCMS } from '@/components/admin/AdminCMS';
 import { AdminUsers } from '@/components/admin/AdminUsers';
+import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -110,7 +111,7 @@ export default function AdminPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Produkter</span>
@@ -122,6 +123,10 @@ export default function AdminPage() {
             <TabsTrigger value="cms" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">CMS</span>
+            </TabsTrigger>
+            <TabsTrigger value="emails" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Emails</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -139,6 +144,10 @@ export default function AdminPage() {
 
           <TabsContent value="cms">
             <AdminCMS />
+          </TabsContent>
+
+          <TabsContent value="emails">
+            <AdminEmailTemplates />
           </TabsContent>
 
           <TabsContent value="users">
