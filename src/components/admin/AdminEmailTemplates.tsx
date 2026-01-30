@@ -397,48 +397,125 @@ export function AdminEmailTemplates() {
         </DialogContent>
       </Dialog>
 
-      {/* Preview Dialog */}
+      {/* Preview Dialog - matches actual email layout from edge function */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Forhåndsvisning af email</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Forhåndsvisning af email
+            </DialogTitle>
             <DialogDescription>
-              Sådan vil emailen se ud med eksempeldata
+              Sådan vil emailen se ud med eksempeldata (variabler er erstattet)
             </DialogDescription>
           </DialogHeader>
-          <div className="border rounded-lg overflow-hidden">
-            {/* Email wrapper matching site visual identity */}
-            <div style={{ 
-              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
-              maxWidth: '600px', 
-              margin: '0 auto', 
-              padding: '20px',
-              backgroundColor: '#ffffff'
-            }}>
-              <div style={{ 
-                borderBottom: '2px solid #5c6b5a', 
-                paddingBottom: '16px', 
-                marginBottom: '24px' 
-              }}>
-                <h1 style={{ 
-                  color: '#5c6b5a', 
-                  fontSize: '24px', 
-                  margin: 0,
-                  fontFamily: "'Playfair Display', serif"
-                }}>
-                  Klitmøllers Indkøbsforening
-                </h1>
-              </div>
-              <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
-              <div style={{ 
-                marginTop: '32px', 
-                paddingTop: '16px', 
-                borderTop: '1px solid #e5e5e5',
-                color: '#666',
-                fontSize: '14px'
-              }}>
-                <p style={{ margin: 0 }}>Med venlig hilsen,</p>
-                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>Klitmøllers Indkøbsforening</p>
+          
+          {/* Sample data info box */}
+          <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2 text-sm">
+            <Info className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+            <div className="text-muted-foreground">
+              <strong>Eksempeldata:</strong> Anders Andersen, anders@example.dk, Økologiske Mandler, 2 kg, 45 kr/kg = 90 kr
+            </div>
+          </div>
+          
+          {/* Email preview container - scrollable */}
+          <div className="flex-1 overflow-y-auto border rounded-lg bg-slate-100">
+            <div className="p-4">
+              {/* Email wrapper - exact match with edge function wrapEmailContent */}
+              <div 
+                style={{ 
+                  maxWidth: '600px',
+                  margin: '0 auto',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                }}
+              >
+                {/* Header */}
+                <div 
+                  style={{
+                    backgroundColor: '#5c6b5a',
+                    padding: '24px',
+                    textAlign: 'center' as const
+                  }}
+                >
+                  <h1 
+                    style={{
+                      color: '#ffffff',
+                      margin: 0,
+                      fontSize: '28px',
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontWeight: 600
+                    }}
+                  >
+                    Klitmøllers Indkøbsforening
+                  </h1>
+                  <p 
+                    style={{
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      margin: '8px 0 0 0',
+                      fontSize: '14px',
+                      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                    }}
+                  >
+                    Fælles indkøb af kvalitetsvarer
+                  </p>
+                </div>
+                
+                {/* Content */}
+                <div 
+                  style={{
+                    padding: '32px 24px',
+                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                    fontSize: '16px',
+                    lineHeight: 1.6,
+                    color: '#333333'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+                
+                {/* Footer */}
+                <div 
+                  style={{
+                    backgroundColor: '#f8f9fa',
+                    padding: '24px',
+                    borderTop: '1px solid #e9ecef',
+                    textAlign: 'center' as const
+                  }}
+                >
+                  <p 
+                    style={{
+                      margin: 0,
+                      color: '#5c6b5a',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                    }}
+                  >
+                    Med venlig hilsen,
+                  </p>
+                  <p 
+                    style={{
+                      margin: '4px 0 0 0',
+                      color: '#5c6b5a',
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontSize: '16px'
+                    }}
+                  >
+                    Klitmøllers Indkøbsforening
+                  </p>
+                  <p 
+                    style={{
+                      margin: '16px 0 0 0',
+                      color: '#6c757d',
+                      fontSize: '12px',
+                      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                    }}
+                  >
+                    Denne email er sendt automatisk. Besvar venligst ikke denne email.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
