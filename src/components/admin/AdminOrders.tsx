@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useProducts, useUpdateProduct } from '@/hooks/useProducts';
 import { useAllReservations, useUpdateReservation } from '@/hooks/useReservations';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +18,24 @@ export function AdminOrders() {
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
 
+  // Fetch all profiles for admin view
+  const { data: profiles } = useQuery({
+    queryKey: ['admin-profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const profilesMap = useMemo(() => {
+    const map: Record<string, { full_name: string | null; email: string | null }> = {};
+    profiles?.forEach(p => { map[p.user_id] = p; });
+    return map;
+  }, [profiles]);
+
   const isLoading = productsLoading || reservationsLoading;
 
   // Group reservations by product
@@ -27,7 +47,6 @@ export function AdminOrders() {
     return acc;
   }, {} as Record<string, typeof allReservations>);
 
-  // Filter products that have reservations and are ready to order
   const readyToOrder = products?.filter(
     (p) => p.status === 'open' && p.current_quantity >= p.target_quantity
   );
@@ -35,7 +54,6 @@ export function AdminOrders() {
   const orderedProducts = products?.filter((p) => p.status === 'ordered');
   const arrivedProducts = products?.filter((p) => p.status === 'arrived');
 
-  // Get all unpaid reservations for arrived products
   const unpaidReservations = allReservations?.filter(
     (r) => (r.status === 'ordered' || r.status === 'ready') && !r.paid
   ) || [];
@@ -44,7 +62,6 @@ export function AdminOrders() {
     setUpdatingStatus(productId);
     try {
       await updateProduct.mutateAsync({ id: productId, status: newStatus });
-      
       const statusLabel = newStatus === 'ordered' ? 'bestilt' : 'ankommet';
       toast.success(
         `Produktet er markeret som ${statusLabel}`,
@@ -76,6 +93,21 @@ export function AdminOrders() {
     } finally {
       setMarkingPaid(null);
     }
+  };
+
+  const getUserDisplay = (userId: string) => {
+    const profile = profilesMap[userId];
+    if (profile?.full_name) {
+      return profile.full_name;
+    }
+    if (profile?.email) {
+      return profile.email;
+    }
+    return `${userId.slice(0, 8)}...`;
+  };
+
+  const getUserEmail = (userId: string) => {
+    return profilesMap[userId]?.email || null;
   };
 
   const getStatusBadge = (status: string) => {
@@ -118,6 +150,8 @@ export function AdminOrders() {
             {unpaidReservations.map((reservation) => {
               const product = products?.find(p => p.id === reservation.product_id);
               const totalPrice = (product?.price_per_unit || 0) * reservation.quantity;
+              const userName = getUserDisplay(reservation.user_id);
+              const userEmail = getUserEmail(reservation.user_id);
               
               return (
                 <Card key={reservation.id} className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
@@ -137,8 +171,14 @@ export function AdminOrders() {
                             {reservation.quantity} {product?.unit_name}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Bruger: {reservation.user_id.slice(0, 8)}... • {totalPrice.toFixed(2)} kr
+                        <p className="text-sm font-medium">
+                          {userName}
+                        </p>
+                        {userEmail && userName !== userEmail && (
+                          <p className="text-xs text-muted-foreground">{userEmail}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {totalPrice.toFixed(2)} kr
                         </p>
                       </div>
                       <Button
