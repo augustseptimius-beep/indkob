@@ -6,13 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? false : true;
   const [isLogin, setIsLogin] = useState(initialMode);
+  const [isRecovery, setIsRecovery] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -20,13 +22,11 @@ export default function AuthPage() {
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
-  // Update mode when URL changes
   useEffect(() => {
     const mode = searchParams.get('mode');
     setIsLogin(mode !== 'signup');
   }, [searchParams]);
 
-  // Redirect if already logged in
   if (user) {
     navigate('/min-side');
     return null;
@@ -70,6 +70,76 @@ export default function AuthPage() {
     }
   };
 
+  const handleRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error('Indtast din email-adresse');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/min-side`,
+      });
+      if (error) {
+        toast.error(error.message || 'Kunne ikke sende nulstillingslink');
+      } else {
+        toast.success('Vi har sendt dig et link til at nulstille din adgangskode. Tjek din indbakke.');
+      }
+    } catch (err) {
+      toast.error('Der opstod en fejl');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isRecovery) {
+    return (
+      <Layout>
+        <div className="container-narrow py-16 md:py-24">
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="font-serif text-2xl">Nulstil adgangskode</CardTitle>
+                <CardDescription>
+                  Indtast din email, så sender vi et link til at nulstille din adgangskode
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleRecovery} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="recovery-email">Email</Label>
+                    <Input
+                      id="recovery-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="din@email.dk"
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Send nulstillingslink
+                  </Button>
+                </form>
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsRecovery(false)}
+                    className="text-primary hover:underline text-sm inline-flex items-center gap-1"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    Tilbage til login
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -113,7 +183,18 @@ export default function AuthPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Adgangskode</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Adgangskode</Label>
+                    {isLogin && (
+                      <button
+                        type="button"
+                        onClick={() => setIsRecovery(true)}
+                        className="text-xs text-muted-foreground hover:text-primary hover:underline"
+                      >
+                        Glemt adgangskode?
+                      </button>
+                    )}
+                  </div>
                   <Input
                     id="password"
                     type="password"
