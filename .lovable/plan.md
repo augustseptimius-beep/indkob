@@ -1,129 +1,125 @@
 
 
-# Prioriteret forbedringsplan for Klitmøllers Indkøbsforening
+# Produktets livscyklus: Fra lineaer til cirkulaer
 
-Herunder er forbedringerne prioriteret efter, hvad der giver mest vaerdi for brugerne og platformen lige nu. Jeg har vurderet hvert punkt ud fra: hvor mange brugere det pavirker, hvor kritisk det er for kerneoplevelsen, og hvor hurtigt det kan implementeres.
+## Problemet i dag
 
----
+Systemet behandler produkter som om de har et lineaert liv: open -> ordered -> arrived -> completed. Men i virkeligheden er produkter **permanente** - de korer i cyklusser. Nar et produkt nar sit mal, og admin bestiller hjem, skal det abne igen for nye reservationer.
 
-## Prioritet 1: UX - Brugeren kan ikke aendre eller annullere sin reservation
+**Nuvaerende flow (forkert):**
 
-**Problem:** Nar en bruger har reserveret et produkt, er der ingen mulighed for at aendre antal eller annullere reservationen fra "Min side". Hooks til `useDeleteReservation` og `useUpdateReservation` eksisterer allerede i koden, men de bruges ikke i brugerens interface.
+```text
+open --> ordered --> arrived --> completed (slut)
+```
 
-**Losning:**
-- Tilfoej "Aendr" og "Annuller" knapper pa hver reservation pa "Min side"
-- Annuller-knap med bekraeftelsesdialog
-- Mulighed for at justere antal (op/ned) direkte pa reservationen
-- Kun muligt nar produktet stadig har status `open` (ikke nar det er bestilt hjem)
+**Korrekt flow:**
 
-**Pavirkning:** Hoj - dette er en helt grundlaeggende funktion som alle brugere har brug for.
+```text
+       +----> mal naet (last) ----> admin bestiller hjem +
+       |                                                  |
+       +------ open (modtager reservationer) <------------+
+               current_quantity nulstilles
+```
 
----
-
-## Prioritet 2: UX - Soegning og filtrering pa produktsiden
-
-**Problem:** Produktsiden har kategorifilter, men ingen soegefunktion. Med 8 produkter og voksende sortiment bliver det svaerere at finde det man leder efter.
-
-**Losning:**
-- Tilfoej et soegefelt oevre pa produktsiden der filtrerer pa titel, beskrivelse og leverandoernavn
-- Tilfoej sorteringsmuligheder: Nyeste, Stoerste besparelse, Taettest pa mal
-
-**Pavirkning:** Middel - forbedrer navigation og overblik, saerligt nar sortimentet vokser.
+Produktet lever for evigt. Det skifter mellem at vaere abent for nye reservationer og midlertidigt last (nar malet er naet, mens admin bestiller).
 
 ---
 
-## Prioritet 3: UX - Visning af brugernavne i admin-ordrer i stedet for user_id
+## Hvad skal aendres
 
-**Problem:** I admin-ordresiden ("Afventende betalinger") vises reservationer med `reservation.user_id.slice(0, 8)...` - et afkortet UUID der er ulaeseligt for admin. Admin kan ikke se hvem der skylder betaling.
+### 1. Database: Opdater trigger til at genabne produktet
 
-**Losning:**
-- Join med `profiles`-tabellen sa brugerens navn og email vises i stedet for user_id
-- Opdater `useAllReservations` til ogsa at hente profil-data (eller lav et separat lookup)
+Den eksisterende trigger `reset_quantity_on_order` nulstiller allerede `current_quantity` nar admin markerer "bestilt hjem". Den skal ogsa saette status tilbage til `open`, sa produktet straks abner for nye reservationer.
 
-**Pavirkning:** Hoj for admin - goer daglig drift langt nemmere.
+Derudover skal triggeren markere alle `pending` reservationer for produktet som `ordered`, sa admin kan spore den bestilte batch via reservationer i stedet for via produktstatus.
 
----
+### 2. Admin Ordrer: Sporingslogik flyttes fra produkt til reservationer
 
-## Prioritet 4: UX - "Glemt adgangskode" funktionalitet
+I dag grupperer AdminOrders efter **produktstatus** (ordered, arrived). Da produktet nu gar direkte tilbage til `open`, skal admin i stedet se **reservations-batches**:
 
-**Problem:** Der er ingen "Glemt adgangskode" mulighed pa login-siden. Hvis en bruger glemmer sin kode, kan de ikke komme ind.
+- **"Klar til bestilling"** - produkter der er `open` med `current_quantity >= target_quantity` (uaendret)
+- **"Bestilte batches"** - reservationer med status `ordered` (grupperet pr. produkt). Admin kan markere en batch som "ankommet" (saetter reservationer til `ready`)
+- **"Ankomne batches"** - reservationer med status `ready`. Viser betalingsstatus
+- **"Afventende betalinger"** - ubetalte reservationer (uaendret)
 
-**Losning:**
-- Tilfoej et "Glemt adgangskode?" link pa login-formularen
-- Implementer password reset flow via `supabase.auth.resetPasswordForEmail()`
-- Tilfoej en side/modal til at indsamle email og sende reset-link
+### 3. Fjern `completed` fra produktstatus
 
-**Pavirkning:** Hoj - kritisk for at brugere kan komme tilbage pa platformen.
+Da produkter aldrig "afsluttes", fjernes `completed` som produktstatus fra:
+- `supabase-types.ts` (ProductStatus type)
+- `ProductFormDialog.tsx` (status dropdown)
+- `ProductCard.tsx` (status labels/styling)
+- `ProductDetailPage.tsx` (status badge)
+- `AdminProducts.tsx` (status badge)
+- `AdminOrders.tsx` (status config)
 
----
+Reservationer kan stadig have status `completed` (nar en bruger har afhentet sin vare).
 
-## Prioritet 5: UX - Produktsiden viser ogsa afsluttede/gamle produkter
+### 4. Produktsiden: Opdater "Vis afsluttede" toggle
 
-**Problem:** Produktsiden viser alle produkter inklusiv afsluttede. For nye brugere kan det vaere forvirrende at se produkter man ikke kan reservere.
+Da produkter ikke laengere kan vaere `completed`, omdobes toglen til "Vis alle" eller fjernes helt, da alle produkter nu altid er `open`. Filtreringen tilpasses sa den evt. skjuler produkter der midlertidigt er last (target naet, afventer admin).
 
-**Losning:**
-- Vis som standard kun `open` og `ordered` produkter
-- Tilfoej en toggle/filter: "Vis ogsa afsluttede" for at se historik
-- Sorter abne produkter forst, derefter efter oprettelsesdato
+### 5. Produktdetaljesiden: Korrekt besked ved target naet
 
-**Pavirkning:** Middel - giver renere overblik og bedre foerstegangoplevelse.
+Nar `current_quantity >= target_quantity`, vises en besked som "Malet er naet - afventer bestilling hos leverandor" i stedet for blot at skjule reservationsknappen. Brugeren skal forsta at produktet abner igen snart.
 
----
+### 6. Min Side: Vis korrekt status pa reservationer
 
-## Prioritet 6: Backend - Admin kan ikke se brugernavn pa betalinger
-
-**Problem:** Nar admin skal haandtere betalinger via MobilePay, kan de ikke matche en reservation med det navn der star i MobilePay-appen, fordi brugernavnet ikke vises.
-
-**Losning:** (Delvist overlappende med Prioritet 3)
-- I "Afventende betalinger"-sektionen, vis brugerens fulde navn og email tydeligt
-- Eventuelt tilfoej et felt sa admin kan notere MobilePay-transaktions-ID
-
-**Pavirkning:** Hoj for admin - goer betalingshondtering praktisk mulig.
-
----
-
-## Prioritet 7: UX - Mobiloptimering af produktdetaljesiden
-
-**Problem:** Reservationsomradet pa produktdetaljesiden er ikke optimeret til mobil. Number-input feltet og knapperne kan vaere svaere at betjene pa sma skaerme.
-
-**Losning:**
-- Goer reservations-sektionen sticky i bunden af skaermen pa mobil
-- Stoerre touch-venlige knapper til +/- mængdejustering
-- Forenkling af layoutet pa sma skaerme
-
-**Pavirkning:** Middel - mange brugere vil tilga platformen fra mobilen.
-
----
-
-## Opsummering: Anbefalet raekkefoelje
-
-| Nr. | Type | Forbedring | Estimeret indsats |
-|-----|------|-----------|-------------------|
-| 1 | UX | Aendr/annuller reservation fra Min side | Lille |
-| 2 | UX | Soegning og sortering pa produktsiden | Lille |
-| 3 | UX/Backend | Vis brugernavne i admin-ordrer | Lille |
-| 4 | UX | Glemt adgangskode | Lille |
-| 5 | UX | Filtrer afsluttede produkter fra | Lille |
-| 6 | Backend/UX | Forbedret betalingsoversigt for admin | Lille-Middel |
-| 7 | UX | Mobiloptimering af produktside | Middel |
-
-Alle forbedringerne er relativt hurtige at implementere og bygger pa eksisterende kode og arkitektur. Prioritet 1, 3 og 4 er de mest kritiske for daglig brug af platformen.
+Reservation-status labels opdateres til at afspejle den nye flow:
+- `pending` -> "Afventer flere kobere" (uaendret)
+- `ordered` -> "Bestilt hjem" (uaendret)
+- `ready` -> "Klar til afhentning" (uaendret)
+- `completed` -> "Afhentet" (uaendret)
 
 ---
 
 ## Tekniske detaljer
 
-**Prioritet 1 (Reservation CRUD):**
-- Tilfoej `useDeleteReservation` og `useUpdateReservation` kald i `MyPage.tsx`
-- Opret inline-redigering med quantity input og bekraeftelses-dialog for sletning
-- Betingelse: kun vis edit/slet nar `reservation.product?.status === 'open'`
+### Database migration
 
-**Prioritet 3 (Admin brugernavne):**
-- Udvid `useAllReservations` queryet med profile join: `product:products(*), profile:profiles!user_id(full_name, email)`
-- Alternativt: lav et separat profile-lookup da reservations-tabellens foreign key ikke direkte refererer til profiles
+```sql
+-- Opdater trigger: nar status saettes til 'ordered', 
+-- marker alle pending reservationer som 'ordered',
+-- nulstil quantity, og saet status tilbage til 'open'
+CREATE OR REPLACE FUNCTION public.reset_product_quantity_on_order()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  IF NEW.status = 'ordered' AND OLD.status != 'ordered' THEN
+    -- Marker alle pending reservationer for dette produkt som ordered
+    UPDATE reservations 
+    SET status = 'ordered', updated_at = now()
+    WHERE product_id = NEW.id AND status = 'pending';
+    
+    -- Nulstil quantity og saet tilbage til open
+    NEW.current_quantity := 0;
+    NEW.status := 'open';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+```
 
-**Prioritet 4 (Password reset):**
-- Kald `supabase.auth.resetPasswordForEmail(email)` fra AuthPage
-- Tilfoej en "recovery" state i AuthPage formularen
-- Opret eventuel email-skabelon til password reset (styres via Supabase Auth settings)
+### AdminOrders refaktorering
+
+- Erstat produkt-baserede sektioner ("Bestilte produkter", "Ankomne produkter") med reservations-baserede sektioner
+- Grupper `ordered` reservationer pr. produkt, sa admin kan markere hele batchen som "ankommet"
+- Grupper `ready` reservationer pr. produkt med betalingsoverblik
+- Behold "Klar til bestilling" sektionen (baseret pa produkter med target naet)
+
+### Filer der aendres
+
+| Fil | AEndring |
+|-----|---------|
+| `supabase/migrations/` (ny) | Opdateret trigger + fjern 'completed' status |
+| `src/lib/supabase-types.ts` | Fjern 'completed' fra ProductStatus |
+| `src/components/admin/AdminOrders.tsx` | Refaktorer til reservations-baseret sporingsflow |
+| `src/components/admin/AdminProducts.tsx` | Fjern 'completed' fra status badges |
+| `src/components/admin/ProductFormDialog.tsx` | Fjern 'completed' fra status dropdown |
+| `src/components/products/ProductCard.tsx` | Fjern 'completed' status, tilfoej "mal naet" visning |
+| `src/pages/ProductDetailPage.tsx` | Tilfoej besked ved target naet, fjern 'completed' |
+| `src/pages/ProductsPage.tsx` | Opdater/fjern "Vis afsluttede" toggle |
+| `src/hooks/useReservations.ts` | Tilfoej mutation til batch-opdatering af reservationer |
 
