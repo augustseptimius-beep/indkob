@@ -1,5 +1,5 @@
 // Extended types for our application
-export type ProductStatus = 'open' | 'ordered' | 'arrived' | 'completed';
+export type ProductStatus = 'open' | 'ordered' | 'arrived';
 export type ReservationStatus = 'pending' | 'ordered' | 'ready' | 'completed';
 export type AppRole = 'admin' | 'member';
 

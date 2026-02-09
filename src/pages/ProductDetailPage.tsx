@@ -174,14 +174,23 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {!user && product.status === 'open' && (
+            {product.status === 'open' && isComplete && (
+              <div className="bg-success/10 border border-success/30 rounded-xl p-4 text-center">
+                <p className="font-medium text-success">Målet er nået! 🎉</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Afventer bestilling hos leverandør. Produktet åbner igen for nye tilmeldinger snart.
+                </p>
+              </div>
+            )}
+
+            {!user && product.status === 'open' && !isComplete && (
               <Button asChild size="lg" className="w-full">
                 <Link to="/auth">Log ind for at reservere</Link>
               </Button>
             )}
 
-            {product.status !== 'open' && (
-              <Badge className="text-base px-4 py-2">{product.status === 'ordered' ? 'Bestilt hjem' : product.status === 'arrived' ? 'Klar til afhentning' : 'Afsluttet'}</Badge>
+            {product.status === 'arrived' && (
+              <Badge className="text-base px-4 py-2">Klar til afhentning</Badge>
             )}
           </div>
         </div>

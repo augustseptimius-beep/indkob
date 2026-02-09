@@ -15,7 +15,7 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [showArrived, setShowArrived] = useState(false);
   const { data: products, isLoading } = useProducts(selectedCategory || undefined);
   const { data: categories } = useCategories();
 
@@ -24,9 +24,9 @@ export default function ProductsPage() {
 
     let filtered = products;
 
-    // Filter by status - hide completed/arrived by default
-    if (!showCompleted) {
-      filtered = filtered.filter(p => p.status === 'open' || p.status === 'ordered');
+    // Filter by status - hide arrived by default (products are always 'open' now)
+    if (!showArrived) {
+      filtered = filtered.filter(p => p.status === 'open');
     }
 
     // Filter by search query
@@ -62,7 +62,7 @@ export default function ProductsPage() {
     }
 
     return filtered;
-  }, [products, searchQuery, sortBy, showCompleted]);
+  }, [products, searchQuery, sortBy, showArrived]);
 
   return (
     <Layout>
@@ -106,12 +106,12 @@ export default function ProductsPage() {
             )}
             <div className="flex items-center gap-2">
               <Switch
-                id="show-completed"
-                checked={showCompleted}
-                onCheckedChange={setShowCompleted}
+                id="show-arrived"
+                checked={showArrived}
+                onCheckedChange={setShowArrived}
               />
-              <Label htmlFor="show-completed" className="text-sm text-muted-foreground cursor-pointer">
-                Vis afsluttede
+              <Label htmlFor="show-arrived" className="text-sm text-muted-foreground cursor-pointer">
+                Vis ankomne
               </Label>
             </div>
           </div>

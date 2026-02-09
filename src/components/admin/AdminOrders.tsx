@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Check, Package, Truck, Mail, CreditCard, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Reservation } from '@/lib/supabase-types';
 
 export function AdminOrders() {
   const { data: products, isLoading: productsLoading } = useProducts();
@@ -17,6 +18,7 @@ export function AdminOrders() {
   const updateReservation = useUpdateReservation();
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [updatingBatch, setUpdatingBatch] = useState<string | null>(null);
 
   // Fetch all profiles for admin view
   const { data: profiles } = useQuery({
@@ -38,35 +40,58 @@ export function AdminOrders() {
 
   const isLoading = productsLoading || reservationsLoading;
 
-  // Group reservations by product
-  const reservationsByProduct = allReservations?.reduce((acc, reservation) => {
-    if (!acc[reservation.product_id]) {
-      acc[reservation.product_id] = [];
-    }
-    acc[reservation.product_id].push(reservation);
-    return acc;
-  }, {} as Record<string, typeof allReservations>);
-
+  // Products ready to order (target reached, status open)
   const readyToOrder = products?.filter(
     (p) => p.status === 'open' && p.current_quantity >= p.target_quantity
   );
 
-  const orderedProducts = products?.filter((p) => p.status === 'ordered');
-  const arrivedProducts = products?.filter((p) => p.status === 'arrived');
+  // Group ordered reservations by product (batch tracking)
+  const orderedReservationsByProduct = useMemo(() => {
+    const map: Record<string, Reservation[]> = {};
+    allReservations?.filter(r => r.status === 'ordered').forEach(r => {
+      if (!map[r.product_id]) map[r.product_id] = [];
+      map[r.product_id].push(r);
+    });
+    return map;
+  }, [allReservations]);
 
+  // Group ready reservations by product (arrived batches)
+  const readyReservationsByProduct = useMemo(() => {
+    const map: Record<string, Reservation[]> = {};
+    allReservations?.filter(r => r.status === 'ready').forEach(r => {
+      if (!map[r.product_id]) map[r.product_id] = [];
+      map[r.product_id].push(r);
+    });
+    return map;
+  }, [allReservations]);
+
+  // Unpaid reservations across ordered + ready
   const unpaidReservations = allReservations?.filter(
     (r) => (r.status === 'ordered' || r.status === 'ready') && !r.paid
   ) || [];
 
-  const updateProductStatus = async (productId: string, newStatus: 'ordered' | 'arrived') => {
+  // Count pending reservations per product (for ready-to-order section)
+  const pendingReservationsByProduct = useMemo(() => {
+    const map: Record<string, Reservation[]> = {};
+    allReservations?.filter(r => r.status === 'pending').forEach(r => {
+      if (!map[r.product_id]) map[r.product_id] = [];
+      map[r.product_id].push(r);
+    });
+    return map;
+  }, [allReservations]);
+
+  const markProductAsOrdered = async (productId: string) => {
     setUpdatingStatus(productId);
     try {
-      await updateProduct.mutateAsync({ id: productId, status: newStatus });
-      const statusLabel = newStatus === 'ordered' ? 'bestilt' : 'ankommet';
+      // This triggers the DB trigger which:
+      // 1. Marks all pending reservations as 'ordered'
+      // 2. Resets current_quantity to 0
+      // 3. Sets product status back to 'open'
+      await updateProduct.mutateAsync({ id: productId, status: 'ordered' });
       toast.success(
-        `Produktet er markeret som ${statusLabel}`,
+        'Produktet er bestilt hjem',
         { 
-          description: 'Notifikationer sendes automatisk til alle brugere med reservationer.',
+          description: 'Reservationer er markeret som bestilt. Produktet er åbent igen for nye tilmeldinger.',
           icon: <Mail className="h-4 w-4" />
         }
       );
@@ -75,6 +100,25 @@ export function AdminOrders() {
       toast.error('Kunne ikke opdatere status', { description: error.message });
     } finally {
       setUpdatingStatus(null);
+    }
+  };
+
+  const markBatchAsArrived = async (productId: string) => {
+    setUpdatingBatch(productId);
+    try {
+      const batch = orderedReservationsByProduct[productId] || [];
+      for (const reservation of batch) {
+        await updateReservation.mutateAsync({ id: reservation.id, status: 'ready' });
+      }
+      toast.success(
+        `${batch.length} reservationer markeret som klar til afhentning`,
+        { icon: <Package className="h-4 w-4" /> }
+      );
+    } catch (error: any) {
+      console.error('Error marking batch as arrived:', error);
+      toast.error('Kunne ikke opdatere batch', { description: error.message });
+    } finally {
+      setUpdatingBatch(null);
     }
   };
 
@@ -95,14 +139,19 @@ export function AdminOrders() {
     }
   };
 
+  const markReservationAsCompleted = async (reservationId: string) => {
+    try {
+      await updateReservation.mutateAsync({ id: reservationId, status: 'completed' });
+      toast.success('Reservation markeret som afhentet');
+    } catch (error: any) {
+      toast.error('Kunne ikke opdatere', { description: error.message });
+    }
+  };
+
   const getUserDisplay = (userId: string) => {
     const profile = profilesMap[userId];
-    if (profile?.full_name) {
-      return profile.full_name;
-    }
-    if (profile?.email) {
-      return profile.email;
-    }
+    if (profile?.full_name) return profile.full_name;
+    if (profile?.email) return profile.email;
     return `${userId.slice(0, 8)}...`;
   };
 
@@ -110,20 +159,16 @@ export function AdminOrders() {
     return profilesMap[userId]?.email || null;
   };
 
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { className: string; label: string }> = {
-      open: { className: 'bg-primary/20 text-primary', label: 'Åben' },
-      ordered: { className: 'bg-accent/20 text-accent-foreground', label: 'Bestilt' },
-      arrived: { className: 'bg-green-100 text-green-800', label: 'Ankommet' },
-      completed: { className: 'bg-muted text-muted-foreground', label: 'Afsluttet' },
-    };
-    const { className, label } = config[status] || config.open;
-    return <Badge className={className}>{label}</Badge>;
+  const getProductById = (productId: string) => {
+    return products?.find(p => p.id === productId);
   };
 
   if (isLoading) {
     return <div className="text-center py-8">Indlæser ordrer...</div>;
   }
+
+  const orderedProductIds = Object.keys(orderedReservationsByProduct);
+  const readyProductIds = Object.keys(readyReservationsByProduct);
 
   return (
     <div className="space-y-8">
@@ -133,7 +178,7 @@ export function AdminOrders() {
           <div className="flex items-center gap-3">
             <Mail className="h-5 w-5 text-primary" />
             <p className="text-sm">
-              <strong>Automatiske notifikationer:</strong> Når du ændrer et produkts status, sendes der automatisk email til alle brugere med reservationer.
+              <strong>Automatiske notifikationer:</strong> Når du markerer "Bestil hjem", opdateres reservationer automatisk og produktet genåbner for nye tilmeldinger.
             </p>
           </div>
         </CardContent>
@@ -148,7 +193,7 @@ export function AdminOrders() {
           </h2>
           <div className="grid gap-4">
             {unpaidReservations.map((reservation) => {
-              const product = products?.find(p => p.id === reservation.product_id);
+              const product = getProductById(reservation.product_id);
               const totalPrice = (product?.price_per_unit || 0) * reservation.quantity;
               const userName = getUserDisplay(reservation.user_id);
               const userEmail = getUserEmail(reservation.user_id);
@@ -171,9 +216,7 @@ export function AdminOrders() {
                             {reservation.quantity} {product?.unit_name}
                           </Badge>
                         </div>
-                        <p className="text-sm font-medium">
-                          {userName}
-                        </p>
+                        <p className="text-sm font-medium">{userName}</p>
                         {userEmail && userName !== userEmail && (
                           <p className="text-xs text-muted-foreground">{userEmail}</p>
                         )}
@@ -199,7 +242,7 @@ export function AdminOrders() {
         </section>
       )}
 
-      {/* Ready to Order */}
+      {/* Ready to Order - products where target is reached */}
       <section>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Check className="h-5 w-5 text-green-600" />
@@ -207,123 +250,10 @@ export function AdminOrders() {
         </h2>
         {readyToOrder && readyToOrder.length > 0 ? (
           <div className="grid gap-4">
-            {readyToOrder.map((product) => (
-              <Card key={product.id} className="border-green-200 bg-green-50/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    {product.image_url && (
-                      <img
-                        src={product.image_url}
-                        alt={product.title}
-                        className="w-16 h-16 object-cover rounded-lg"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{product.title}</h3>
-                        {getStatusBadge(product.status)}
-                      </div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Progress
-                          value={(product.current_quantity / product.target_quantity) * 100}
-                          className="h-2 flex-1"
-                        />
-                        <span className="text-sm font-medium">
-                          {product.current_quantity} / {product.target_quantity}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {reservationsByProduct?.[product.id]?.length || 0} reservationer
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() => updateProductStatus(product.id, 'ordered')}
-                      disabled={updatingStatus === product.id}
-                      className="flex items-center gap-2"
-                    >
-                      <Truck className="h-4 w-4" />
-                      {updatingStatus === product.id ? 'Opdaterer...' : 'Marker som bestilt'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              Ingen produkter er klar til bestilling endnu.
-            </CardContent>
-          </Card>
-        )}
-      </section>
-
-      {/* Ordered Products */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Truck className="h-5 w-5 text-accent" />
-          Bestilte produkter ({orderedProducts?.length || 0})
-        </h2>
-        {orderedProducts && orderedProducts.length > 0 ? (
-          <div className="grid gap-4">
-            {orderedProducts.map((product) => (
-              <Card key={product.id} className="border-accent/30 bg-accent/5">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    {product.image_url && (
-                      <img
-                        src={product.image_url}
-                        alt={product.title}
-                        className="w-16 h-16 object-cover rounded-lg"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{product.title}</h3>
-                        {getStatusBadge(product.status)}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {product.current_quantity} {product.unit_name} bestilt
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() => updateProductStatus(product.id, 'arrived')}
-                      disabled={updatingStatus === product.id}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Package className="h-4 w-4" />
-                      {updatingStatus === product.id ? 'Opdaterer...' : 'Marker som ankommet'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              Ingen produkter afventer levering.
-            </CardContent>
-          </Card>
-        )}
-      </section>
-
-      {/* Arrived Products */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Package className="h-5 w-5 text-green-600" />
-          Ankomne produkter ({arrivedProducts?.length || 0})
-        </h2>
-        {arrivedProducts && arrivedProducts.length > 0 ? (
-          <div className="grid gap-4">
-            {arrivedProducts.map((product) => {
-              const productReservations = reservationsByProduct?.[product.id] || [];
-              const paidCount = productReservations.filter(r => r.paid).length;
-              const unpaidCount = productReservations.length - paidCount;
-              
+            {readyToOrder.map((product) => {
+              const pendingCount = pendingReservationsByProduct[product.id]?.length || 0;
               return (
-                <Card key={product.id}>
+                <Card key={product.id} className="border-green-200 bg-green-50/50">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                       {product.image_url && (
@@ -336,12 +266,141 @@ export function AdminOrders() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold">{product.title}</h3>
-                          {getStatusBadge(product.status)}
+                          <Badge className="bg-green-100 text-green-800">Mål nået</Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Progress
+                            value={(product.current_quantity / product.target_quantity) * 100}
+                            className="h-2 flex-1"
+                          />
+                          <span className="text-sm font-medium">
+                            {product.current_quantity} / {product.target_quantity}
+                          </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Klar til afhentning • {productReservations.length} reservationer
+                          {pendingCount} reservationer klar til bestilling
                         </p>
-                        <div className="flex items-center gap-4 mt-1 text-xs">
+                      </div>
+                      <Button
+                        onClick={() => markProductAsOrdered(product.id)}
+                        disabled={updatingStatus === product.id}
+                        className="flex items-center gap-2"
+                      >
+                        <Truck className="h-4 w-4" />
+                        {updatingStatus === product.id ? 'Bestiller...' : 'Bestil hjem'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              Ingen produkter har nået deres mål endnu.
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      {/* Ordered Batches - reservations with status 'ordered', grouped by product */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Truck className="h-5 w-5 text-accent" />
+          Bestilte batches ({orderedProductIds.length})
+        </h2>
+        {orderedProductIds.length > 0 ? (
+          <div className="grid gap-4">
+            {orderedProductIds.map((productId) => {
+              const product = getProductById(productId);
+              const batch = orderedReservationsByProduct[productId];
+              const totalQuantity = batch.reduce((sum, r) => sum + r.quantity, 0);
+              
+              return (
+                <Card key={productId} className="border-accent/30 bg-accent/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      {product?.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt={product?.title || ''}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold">{product?.title}</h3>
+                          <Badge className="bg-accent/20 text-accent-foreground">Bestilt</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {totalQuantity} {product?.unit_name} fordelt på {batch.length} reservationer
+                        </p>
+                        <div className="mt-2 space-y-1">
+                          {batch.map(r => (
+                            <div key={r.id} className="text-xs text-muted-foreground flex items-center gap-2">
+                              <span>{getUserDisplay(r.user_id)}</span>
+                              <span>•</span>
+                              <span>{r.quantity} {product?.unit_name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => markBatchAsArrived(productId)}
+                        disabled={updatingBatch === productId}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <Package className="h-4 w-4" />
+                        {updatingBatch === productId ? 'Opdaterer...' : 'Marker ankommet'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              Ingen batches afventer levering.
+            </CardContent>
+          </Card>
+        )}
+      </section>
+
+      {/* Arrived Batches - reservations with status 'ready', grouped by product */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Package className="h-5 w-5 text-green-600" />
+          Ankomne batches ({readyProductIds.length})
+        </h2>
+        {readyProductIds.length > 0 ? (
+          <div className="grid gap-4">
+            {readyProductIds.map((productId) => {
+              const product = getProductById(productId);
+              const batch = readyReservationsByProduct[productId];
+              const paidCount = batch.filter(r => r.paid).length;
+              const unpaidCount = batch.length - paidCount;
+              
+              return (
+                <Card key={productId}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {product?.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt={product?.title || ''}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold">{product?.title}</h3>
+                          <Badge className="bg-green-100 text-green-800">Klar til afhentning</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs mb-3">
                           <span className="text-green-600 flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" />
                             {paidCount} betalt
@@ -351,6 +410,28 @@ export function AdminOrders() {
                               {unpaidCount} afventer betaling
                             </span>
                           )}
+                        </div>
+                        <div className="space-y-2">
+                          {batch.map(r => (
+                            <div key={r.id} className="flex items-center justify-between text-sm border-t pt-2">
+                              <div>
+                                <span className="font-medium">{getUserDisplay(r.user_id)}</span>
+                                <span className="text-muted-foreground ml-2">{r.quantity} {product?.unit_name}</span>
+                                {r.paid && <Badge variant="outline" className="ml-2 text-xs text-green-600">Betalt</Badge>}
+                              </div>
+                              {r.status === 'ready' && r.paid && (
+                                <Button
+                                  onClick={() => markReservationAsCompleted(r.id)}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-xs"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Afhentet
+                                </Button>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -362,7 +443,7 @@ export function AdminOrders() {
         ) : (
           <Card>
             <CardContent className="p-6 text-center text-muted-foreground">
-              Ingen produkter er ankommet endnu.
+              Ingen batches er ankommet endnu.
             </CardContent>
           </Card>
         )}

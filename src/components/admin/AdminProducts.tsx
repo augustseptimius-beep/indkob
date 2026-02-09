@@ -69,13 +69,11 @@ export function AdminProducts() {
       open: 'bg-primary/20 text-primary',
       ordered: 'bg-accent/20 text-accent-foreground',
       arrived: 'bg-green-100 text-green-800',
-      completed: 'bg-muted text-muted-foreground',
     };
     const labels: Record<string, string> = {
       open: 'Åben',
       ordered: 'Bestilt',
       arrived: 'Ankommet',
-      completed: 'Afsluttet',
     };
     return (
       <Badge className={variants[status] || variants.open}>
