@@ -13,7 +13,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const progress = (product.current_quantity / product.target_quantity) * 100;
   const isComplete = product.current_quantity >= product.target_quantity;
 
+  const isTargetReached = product.status === 'open' && isComplete;
+
   const getStatusLabel = (status: string) => {
+    if (isTargetReached) return 'Mål nået';
     switch (status) {
       case 'open':
         return 'Åben';
@@ -21,14 +24,13 @@ export function ProductCard({ product }: ProductCardProps) {
         return 'Bestilt hjem';
       case 'arrived':
         return 'Klar til afhentning';
-      case 'completed':
-        return 'Afsluttet';
       default:
         return status;
     }
   };
 
   const getStatusClass = (status: string) => {
+    if (isTargetReached) return 'bg-success/20 text-success';
     switch (status) {
       case 'open':
         return 'bg-primary/10 text-primary';
@@ -36,8 +38,6 @@ export function ProductCard({ product }: ProductCardProps) {
         return 'bg-warning/20 text-warning-foreground';
       case 'arrived':
         return 'bg-success/20 text-success';
-      case 'completed':
-        return 'bg-muted text-muted-foreground';
       default:
         return 'bg-muted text-muted-foreground';
     }
