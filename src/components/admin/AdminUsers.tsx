@@ -7,7 +7,7 @@ import { Shield, ShieldOff, User } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Profile, UserRole } from '@/lib/supabase-types';
 
-interface UserWithRole extends Profile {
+interface UserWithRole extends Omit<Profile, 'email'> {
   isAdmin: boolean;
 }
 
@@ -115,9 +115,6 @@ export function AdminUsers() {
                       <Badge className="bg-primary/20 text-primary">Admin</Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {user.email}
-                  </p>
                   <p className="text-xs text-muted-foreground">
                     Oprettet: {new Date(user.created_at).toLocaleDateString('da-DK')}
                   </p>

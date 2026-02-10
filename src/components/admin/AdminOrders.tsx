@@ -26,14 +26,14 @@ export function AdminOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email');
+        .select('user_id, full_name');
       if (error) throw error;
       return data;
     },
   });
 
   const profilesMap = useMemo(() => {
-    const map: Record<string, { full_name: string | null; email: string | null }> = {};
+    const map: Record<string, { full_name: string | null }> = {};
     profiles?.forEach(p => { map[p.user_id] = p; });
     return map;
   }, [profiles]);
@@ -151,12 +151,7 @@ export function AdminOrders() {
   const getUserDisplay = (userId: string) => {
     const profile = profilesMap[userId];
     if (profile?.full_name) return profile.full_name;
-    if (profile?.email) return profile.email;
     return `${userId.slice(0, 8)}...`;
-  };
-
-  const getUserEmail = (userId: string) => {
-    return profilesMap[userId]?.email || null;
   };
 
   const getProductById = (productId: string) => {
@@ -196,7 +191,6 @@ export function AdminOrders() {
               const product = getProductById(reservation.product_id);
               const totalPrice = (product?.price_per_unit || 0) * reservation.quantity;
               const userName = getUserDisplay(reservation.user_id);
-              const userEmail = getUserEmail(reservation.user_id);
               
               return (
                 <Card key={reservation.id} className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
@@ -217,9 +211,6 @@ export function AdminOrders() {
                           </Badge>
                         </div>
                         <p className="text-sm font-medium">{userName}</p>
-                        {userEmail && userName !== userEmail && (
-                          <p className="text-xs text-muted-foreground">{userEmail}</p>
-                        )}
                         <p className="text-sm text-muted-foreground mt-0.5">
                           {totalPrice.toFixed(2)} kr
                         </p>
