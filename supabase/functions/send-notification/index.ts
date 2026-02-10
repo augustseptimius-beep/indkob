@@ -12,7 +12,6 @@ const corsHeaders = {
 // Type definitions
 interface Profile {
   user_id: string;
-  email: string | null;
   full_name: string | null;
 }
 
@@ -192,22 +191,33 @@ async function getEmailTemplate(
   return data as EmailTemplate | null;
 }
 
-// Get user profile
-async function getProfile(
+// Get user profile and email from auth
+async function getProfileWithEmail(
   supabase: SupabaseClient,
   userId: string
-): Promise<Profile | null> {
+): Promise<{ email: string | null; full_name: string | null } | null> {
+  // Get email from auth.users (secure, not stored in public table)
+  const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
+  if (authError || !authUser?.user) {
+    console.error("Error fetching auth user:", authError);
+    return null;
+  }
+
+  // Get full_name from profiles
   const { data, error } = await supabase
     .from("profiles")
-    .select("user_id, email, full_name")
+    .select("full_name")
     .eq("user_id", userId)
     .single();
 
   if (error) {
     console.error("Error fetching profile:", error);
-    return null;
   }
-  return data as Profile;
+
+  return {
+    email: authUser.user.email || null,
+    full_name: data?.full_name || null,
+  };
 }
 
 // Get product details
@@ -228,7 +238,7 @@ async function getProduct(
   return data as Product;
 }
 
-// Get admin emails
+// Get admin emails via auth admin API
 async function getAdminEmails(
   supabase: SupabaseClient
 ): Promise<string[]> {
@@ -242,36 +252,38 @@ async function getAdminEmails(
     return [];
   }
 
-  const adminUserIds = (adminRoles as { user_id: string }[]).map(r => r.user_id);
-  
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("email")
-    .in("user_id", adminUserIds);
-
-  if (profilesError || !profiles?.length) {
-    console.error("Error fetching admin profiles:", profilesError);
-    return [];
+  const emails: string[] = [];
+  for (const role of adminRoles as { user_id: string }[]) {
+    const { data: authUser } = await supabase.auth.admin.getUserById(role.user_id);
+    if (authUser?.user?.email) {
+      emails.push(authUser.user.email);
+    }
   }
-
-  return (profiles as { email: string | null }[]).map(p => p.email).filter((email): email is string => !!email);
+  return emails;
 }
 
-// Get all member emails
+// Get all member emails via auth admin API
 async function getAllMemberEmails(
   supabase: SupabaseClient
 ): Promise<Array<{ email: string; full_name: string | null }>> {
-  const { data, error } = await supabase
+  // Get all profiles for full_name
+  const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("email, full_name");
+    .select("user_id, full_name");
 
-  if (error) {
-    console.error("Error fetching member emails:", error);
+  if (error || !profiles) {
+    console.error("Error fetching profiles:", error);
     return [];
   }
 
-  const profiles = data as Array<{ email: string | null; full_name: string | null }> || [];
-  return profiles.filter((p): p is { email: string; full_name: string | null } => !!p.email);
+  const results: Array<{ email: string; full_name: string | null }> = [];
+  for (const profile of profiles as Array<{ user_id: string; full_name: string | null }>) {
+    const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
+    if (authUser?.user?.email) {
+      results.push({ email: authUser.user.email, full_name: profile.full_name });
+    }
+  }
+  return results;
 }
 
 // Handle welcome email
@@ -280,7 +292,7 @@ async function handleWelcomeEmail(
   userId: string,
   resendApiKey: string
 ): Promise<{ success: boolean; emailsSent: number }> {
-  const profile = await getProfile(supabase, userId);
+  const profile = await getProfileWithEmail(supabase, userId);
   if (!profile?.email) {
     console.log("No email found for user");
     return { success: true, emailsSent: 0 };
@@ -314,7 +326,7 @@ async function handleReservationEmail(
   resendApiKey: string
 ): Promise<{ success: boolean; emailsSent: number }> {
   const [profile, product] = await Promise.all([
-    getProfile(supabase, userId),
+    getProfileWithEmail(supabase, userId),
     getProduct(supabase, productId),
   ]);
 
@@ -495,19 +507,14 @@ async function handleProductStatusEmail(
   // Get unique user IDs from reservations
   const userIds = [...new Set(typedReservations.map(r => r.user_id))];
   
-  // Fetch profiles for these users
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("user_id, email, full_name")
-    .in("user_id", userIds);
-
-  if (profilesError) {
-    console.error("Error fetching profiles:", profilesError);
-    throw new Error("Could not fetch user profiles");
+  // Fetch profiles and emails for these users via auth admin API
+  const profileMap = new Map<string, { email: string | null; full_name: string | null }>();
+  for (const uid of userIds) {
+    const profileWithEmail = await getProfileWithEmail(supabase, uid);
+    if (profileWithEmail) {
+      profileMap.set(uid, profileWithEmail);
+    }
   }
-
-  const typedProfiles = profiles as Profile[] | null;
-  const profileMap = new Map(typedProfiles?.map(p => [p.user_id, p]) || []);
 
   // Send emails to all users who reserved
   const emailPromises = typedReservations

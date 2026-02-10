@@ -14,7 +14,7 @@ const profileSchema = z.object({
 });
 
 interface ProfileSettingsProps {
-  profile: { full_name: string | null; email: string | null } | null;
+  profile: { full_name: string | null } | null;
   onUpdate: () => void;
 }
 
@@ -67,7 +67,7 @@ export function ProfileSettings({ profile, onUpdate }: ProfileSettingsProps) {
             <Label htmlFor="email">Email</Label>
             <Input 
               id="email" 
-              value={profile?.email || user?.email || ''} 
+              value={user?.email || ''} 
               disabled 
               className="bg-muted"
             />
