@@ -91,27 +91,28 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
 
           {/* Price */}
-          <div className="mb-2">
-            <div className="flex items-baseline gap-1">
-              <p className="text-xl font-semibold text-foreground">
-                {product.price_per_unit.toFixed(2)} kr
-                <span className="text-sm font-normal text-muted-foreground">/{product.unit_name}</span>
+          <div className="mb-1">
+            {product.comparison_price && (
+              <p className="text-sm text-muted-foreground line-through">
+                {product.comparison_price.toFixed(2)} kr/{product.unit_name} *
               </p>
-              {product.comparison_price && (
-                <span className="text-xs text-muted-foreground">*</span>
-              )}
-            </div>
+            )}
+            <p className="text-xl font-semibold text-foreground">
+              {product.price_per_unit.toFixed(2)} kr
+              <span className="text-sm font-normal text-muted-foreground">/{product.unit_name}</span>
+            </p>
           </div>
 
           {/* Comparison note */}
           {product.comparison_price && (
             <p className="text-xs text-success mb-3">
-              Spar {Math.round((1 - product.price_per_unit / product.comparison_price) * 100)}%
+              * Spar {Math.round((1 - product.price_per_unit / product.comparison_price) * 100)}%
               {product.comparison_source
                 ? ` sammenlignet med tilsvarende produkt fra ${product.comparison_source}`
                 : ' sammenlignet med normalprisen'}
             </p>
           )}
+          {!product.comparison_price && <div className="mb-4" />}
 
           {/* Progress Bar */}
           <div className="space-y-2">

@@ -108,30 +108,32 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            <div className="mb-4">
+            <div className="mb-2">
+              {product.comparison_price && (
+                <p className="text-lg text-muted-foreground line-through">
+                  {product.comparison_price.toFixed(2)} kr/{product.unit_name} *
+                </p>
+              )}
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-bold">
                   {product.price_per_unit.toFixed(2)} kr
                   <span className="text-lg font-normal text-muted-foreground">/{product.unit_name}</span>
                 </p>
-                {product.comparison_price && (
-                  <span className="text-sm text-muted-foreground">*</span>
-                )}
               </div>
             </div>
 
-            {product.description && (
-              <p className="text-muted-foreground mb-6">{product.description}</p>
-            )}
-
             {/* Comparison note */}
             {product.comparison_price && (
-              <p className="text-sm text-success mb-6">
+              <p className="text-sm text-success mb-4">
                 * Spar {Math.round((1 - product.price_per_unit / product.comparison_price) * 100)}%
                 {product.comparison_source
                   ? ` sammenlignet med tilsvarende produkt fra ${product.comparison_source}`
                   : ' sammenlignet med normalprisen'}
               </p>
+            )}
+
+            {product.description && (
+              <p className="text-muted-foreground mb-6">{product.description}</p>
             )}
 
             {product.supplier_url && (
