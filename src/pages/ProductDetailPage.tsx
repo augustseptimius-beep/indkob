@@ -109,23 +109,13 @@ export default function ProductDetailPage() {
             )}
 
             <div className="mb-4">
-              {product.comparison_price && (
-                <p className="text-lg text-muted-foreground line-through">
-                  {product.comparison_price.toFixed(2)} kr/{product.unit_name}
-                  {product.comparison_source && (
-                    <span className="ml-1 no-underline text-sm">({product.comparison_source})</span>
-                  )}
-                </p>
-              )}
-              <div className="flex items-baseline gap-3">
+              <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-bold">
                   {product.price_per_unit.toFixed(2)} kr
                   <span className="text-lg font-normal text-muted-foreground">/{product.unit_name}</span>
                 </p>
                 {product.comparison_price && (
-                  <span className="text-sm font-semibold text-success bg-success/10 px-2 py-1 rounded">
-                    Spar {Math.round((1 - product.price_per_unit / product.comparison_price) * 100)}%
-                  </span>
+                  <span className="text-sm text-muted-foreground">*</span>
                 )}
               </div>
             </div>
@@ -134,15 +124,23 @@ export default function ProductDetailPage() {
               <p className="text-muted-foreground mb-6">{product.description}</p>
             )}
 
-            {product.supplier_url && product.supplier_name && (
-              <a href={product.supplier_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline mb-6">
-                {product.supplier_name} <ExternalLink className="w-4 h-4" />
-              </a>
+            {/* Comparison note */}
+            {product.comparison_price && (
+              <p className="text-sm text-success mb-6">
+                * Spar {Math.round((1 - product.price_per_unit / product.comparison_price) * 100)}%
+                {product.comparison_source
+                  ? ` sammenlignet med tilsvarende produkt fra ${product.comparison_source}`
+                  : ' sammenlignet med normalprisen'}
+              </p>
             )}
-            {product.supplier_url && !product.supplier_name && (
-              <a href={product.supplier_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline mb-6">
-                Se hos leverandør <ExternalLink className="w-4 h-4" />
-              </a>
+
+            {product.supplier_url && (
+              <p className="text-sm text-muted-foreground mb-6">
+                Læs mere om produktet hos leverandøren:{' '}
+                <a href={product.supplier_url} target="_blank" rel="noopener noreferrer" className="inline-inline-flex items-center gap-1 text-primary hover:underline">
+                  {product.supplier_name || 'Se her'} <ExternalLink className="w-3 h-3 inline" />
+                </a>
+              </p>
             )}
 
             {/* Progress */}
