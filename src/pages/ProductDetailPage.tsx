@@ -112,6 +112,9 @@ export default function ProductDetailPage() {
               {product.comparison_price && (
                 <p className="text-lg text-muted-foreground line-through">
                   {product.comparison_price.toFixed(2)} kr/{product.unit_name}
+                  {product.comparison_source && (
+                    <span className="ml-1 no-underline text-sm">({product.comparison_source})</span>
+                  )}
                 </p>
               )}
               <div className="flex items-baseline gap-3">
