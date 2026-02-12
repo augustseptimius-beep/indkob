@@ -39,6 +39,7 @@ const productSchema = z.object({
   category_id: z.string().optional(),
   price_per_unit: z.coerce.number().positive('Pris skal være positiv'),
   comparison_price: z.coerce.number().positive('Pris skal være positiv').optional().or(z.literal('')),
+  comparison_source: z.string().optional(),
   unit_name: z.string().min(1, 'Enhed er påkrævet'),
   target_quantity: z.coerce.number().int().positive('Mål-mængde skal være positiv'),
   minimum_purchase: z.coerce.number().int().positive('Minimum køb skal være positiv'),
@@ -92,6 +93,7 @@ export function ProductFormDialog({
       category_id: '',
       price_per_unit: 0,
       comparison_price: '',
+      comparison_source: '',
       unit_name: 'stk',
       target_quantity: 10,
       minimum_purchase: 1,
@@ -112,6 +114,7 @@ export function ProductFormDialog({
         category_id: product.category_id || '',
         price_per_unit: product.price_per_unit,
         comparison_price: product.comparison_price || '',
+        comparison_source: product.comparison_source || '',
         unit_name: product.unit_name,
         target_quantity: product.target_quantity,
         minimum_purchase: product.minimum_purchase,
@@ -130,6 +133,7 @@ export function ProductFormDialog({
         category_id: '',
         price_per_unit: importedData.price || 0,
         comparison_price: '',
+        comparison_source: '',
         unit_name: importedData.unit_name || 'stk',
         target_quantity: 10,
         minimum_purchase: 1,
@@ -147,6 +151,7 @@ export function ProductFormDialog({
         category_id: '',
         price_per_unit: 0,
         comparison_price: '',
+        comparison_source: '',
         unit_name: 'stk',
         target_quantity: 10,
         minimum_purchase: 1,
@@ -167,6 +172,7 @@ export function ProductFormDialog({
       supplier_name: values.supplier_name || null,
       description: values.description || null,
       comparison_price: values.comparison_price ? Number(values.comparison_price) : null,
+      comparison_source: values.comparison_source || null,
     };
 
     if (product) {
@@ -243,7 +249,21 @@ export function ProductFormDialog({
                   <FormItem>
                     <FormLabel>Normalpris (kr.)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="F.eks. Rema1000" {...field} />
+                      <Input type="number" step="0.01" placeholder="Normalpris" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="comparison_source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sammenlignet med</FormLabel>
+                    <FormControl>
+                      <Input placeholder="F.eks. Rema1000, Netto..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
