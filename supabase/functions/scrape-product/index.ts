@@ -31,6 +31,71 @@ interface ProductData {
   is_organic: boolean;
 }
 
+// Simple in-memory rate limiter (per edge function instance)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 10; // max scrapes per window
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
+// Validate URL to prevent SSRF attacks
+function validateScrapeUrl(urlString: string): { valid: boolean; error?: string } {
+  try {
+    const url = new URL(urlString);
+
+    // Only allow https
+    if (url.protocol !== 'https:') {
+      return { valid: false, error: 'Kun HTTPS URLs er tilladt' };
+    }
+
+    const hostname = url.hostname.toLowerCase();
+
+    // Block localhost and loopback
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+      return { valid: false, error: 'Lokale adresser er ikke tilladt' };
+    }
+
+    // Block private/internal IP ranges
+    if (
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.16.') || hostname.startsWith('172.17.') ||
+      hostname.startsWith('172.18.') || hostname.startsWith('172.19.') ||
+      hostname.startsWith('172.20.') || hostname.startsWith('172.21.') ||
+      hostname.startsWith('172.22.') || hostname.startsWith('172.23.') ||
+      hostname.startsWith('172.24.') || hostname.startsWith('172.25.') ||
+      hostname.startsWith('172.26.') || hostname.startsWith('172.27.') ||
+      hostname.startsWith('172.28.') || hostname.startsWith('172.29.') ||
+      hostname.startsWith('172.30.') || hostname.startsWith('172.31.') ||
+      hostname.startsWith('169.254.') ||
+      hostname === 'metadata.google.internal'
+    ) {
+      return { valid: false, error: 'Interne adresser er ikke tilladt' };
+    }
+
+    // Must have a valid TLD (at least one dot)
+    if (!hostname.includes('.')) {
+      return { valid: false, error: 'Ugyldig URL - mangler domæne' };
+    }
+
+    return { valid: true };
+  } catch {
+    return { valid: false, error: 'Ugyldig URL format' };
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -80,11 +145,43 @@ serve(async (req) => {
       );
     }
 
+    // Rate limit check (after auth, before expensive operations)
+    if (!checkRateLimit(userId)) {
+      console.warn(`Rate limit exceeded for admin ${userId}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'For mange import-forespørgsler. Prøv igen om lidt.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { url } = await req.json();
 
-    if (!url) {
+    if (!url || typeof url !== 'string') {
       return new Response(
         JSON.stringify({ success: false, error: 'URL er påkrævet' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Enforce max URL length
+    if (url.length > 2048) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'URL er for lang (max 2048 tegn)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Format URL
+    let formattedUrl = url.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+
+    // Validate URL against SSRF
+    const urlValidation = validateScrapeUrl(formattedUrl);
+    if (!urlValidation.valid) {
+      return new Response(
+        JSON.stringify({ success: false, error: urlValidation.error }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -107,13 +204,7 @@ serve(async (req) => {
       );
     }
 
-    // Format URL
-    let formattedUrl = url.trim();
-    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-      formattedUrl = `https://${formattedUrl}`;
-    }
-
-    console.log('Scraping URL:', formattedUrl);
+    console.log(`Admin ${userId} scraping URL: ${formattedUrl}`);
 
     // Step 1: Scrape the product page with Firecrawl
     const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
@@ -136,7 +227,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: scrapeData.error || 'Kunne ikke hente siden. Tjek at URL\'en er korrekt.' 
+          error: 'Kunne ikke hente siden. Tjek at URL\'en er korrekt.' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -219,8 +310,7 @@ ${markdown.substring(0, 8000)}`;
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
+      console.error('AI API error:', aiResponse.status);
       return new Response(
         JSON.stringify({ success: false, error: 'AI-analyse fejlede' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -230,8 +320,6 @@ ${markdown.substring(0, 8000)}`;
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || '';
 
-    console.log('AI response:', aiContent);
-
     // Parse the JSON from AI response
     let extractedData: ExtractedProductData;
     try {
@@ -239,7 +327,7 @@ ${markdown.substring(0, 8000)}`;
       const jsonStr = aiContent.replace(/```json\n?|\n?```/g, '').trim();
       extractedData = JSON.parse(jsonStr);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', aiContent);
+      console.error('Failed to parse AI response');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -254,24 +342,20 @@ ${markdown.substring(0, 8000)}`;
     
     // Calculate price per unit (kg)
     if (extractedData.price_per_kg !== null && typeof extractedData.price_per_kg === 'number') {
-      // Direct price per kg was found
       pricePerUnit = extractedData.price_per_kg;
     } else if (extractedData.price_total !== null && extractedData.weight_kg !== null && 
                typeof extractedData.price_total === 'number' && typeof extractedData.weight_kg === 'number' &&
                extractedData.weight_kg > 0) {
-      // Calculate price per kg from total price and weight
       pricePerUnit = extractedData.price_total / extractedData.weight_kg;
-      // Round to 2 decimal places
       pricePerUnit = Math.round(pricePerUnit * 100) / 100;
     } else if (extractedData.price_total !== null && typeof extractedData.price_total === 'number') {
-      // Just use the total price if no weight info (assume it's per unit)
       pricePerUnit = extractedData.price_total;
     }
     
     // Determine the appropriate unit name
     let unitName = extractedData.unit_name || 'stk';
     if (extractedData.weight_kg !== null && extractedData.weight_kg > 0) {
-      unitName = 'kg'; // If we calculated from weight, unit is kg
+      unitName = 'kg';
     }
     
     const normalizedData: ProductData = {
@@ -284,8 +368,6 @@ ${markdown.substring(0, 8000)}`;
       unit_name: unitName,
       is_organic: Boolean(extractedData.is_organic),
     };
-
-    console.log('Extracted product data:', normalizedData);
 
     return new Response(
       JSON.stringify({ 
@@ -301,7 +383,7 @@ ${markdown.substring(0, 8000)}`;
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Ukendt fejl' 
+        error: 'Der opstod en uventet fejl' 
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
