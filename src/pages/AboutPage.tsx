@@ -97,7 +97,7 @@ export default function AboutPage() {
                 className="w-32 h-32 rounded-2xl object-cover flex-shrink-0"
               />
               <p className="text-muted-foreground leading-relaxed">
-                Jeg hedder Andreas og er initiativtager til Klitmøllers Indkøbsfællesskab. Min hustru og jeg flyttede til Klitmøller i 2022, og i 2024 blev vi forældre til en datter. Vi bor i Redebyg. Tanken om et indkøbsfællesskab opstod, fordi jeg savnede nem adgang til gode råvarer til fornuftige priser herude. Ved at gå sammen kan vi som naboer få adgang til noget bedre — og samtidig lære hinanden lidt bedre at kende.
+                Jeg hedder August og er initiativtager til Klitmøllers Indkøbsfællesskab. Min hustru og jeg flyttede til Redebyg i Klitmøller i 2022, og i 2024 blev vi forældre til en datter. Tanken om et indkøbsfællesskab opstod, fordi jeg savnede nemmere adgang til gode råvarer til fornuftige priser herude. Ved at gå sammen og købe stort ind, kan vi få adgang billigere priser - og samtidig lære hinanden lidt bedre at kende.
               </p>
             </div>
           </section>
