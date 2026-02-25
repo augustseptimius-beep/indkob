@@ -42,7 +42,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+            <div className="w-10 h-10 min-w-10 rounded-full bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-serif font-bold text-sm">KIF</span>
             </div>
             <span className="hidden sm:block font-serif text-xl font-semibold text-foreground">
@@ -54,7 +54,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden lg:flex items-center gap-6">
             <Link
               to="/produkter"
               className="text-muted-foreground hover:text-foreground transition-colors font-medium"
@@ -124,7 +124,7 @@ export function Header() {
           </nav>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="lg:hidden flex items-center gap-2">
             {user && reservationCount > 0 && (
               <Link to="/min-side" className="relative p-2">
                 <ShoppingBag className="h-5 w-5" />
@@ -149,7 +149,7 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-fade-in">
+          <div className="lg:hidden py-4 border-t border-border animate-fade-in">
             <nav className="flex flex-col gap-4">
               <Link
                 to="/produkter"
