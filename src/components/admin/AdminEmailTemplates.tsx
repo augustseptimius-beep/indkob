@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DOMPurify from 'dompurify';
 import { useEmailTemplates, useUpdateEmailTemplate, useCreateEmailTemplate, useDeleteEmailTemplate, EmailTemplate } from '@/hooks/useEmailTemplates';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -157,7 +158,11 @@ export function AdminEmailTemplates() {
     html = html.replace(/\{\{mobilepay_number\}\}/g, '12345678');
     html = html.replace(/\{\{paid_at\}\}/g, new Date().toLocaleDateString('da-DK'));
     
-    setPreviewHtml(html);
+    const cleanHtml = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['p', 'strong', 'em', 'br', 'h1', 'h2', 'h3', 'h4', 'ul', 'li', 'ol', 'div', 'span', 'a', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'img', 'hr'],
+      ALLOWED_ATTR: ['style', 'class', 'href', 'src', 'alt', 'width', 'height', 'target'],
+    });
+    setPreviewHtml(cleanHtml);
     setIsPreviewOpen(true);
   };
 
