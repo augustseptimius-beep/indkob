@@ -22,7 +22,7 @@ export function SignupBanner() {
                 </h2>
                 <p className="text-muted-foreground max-w-lg">
                   Opret en gratis konto og få adgang til at reservere varer, 
-                  følge med i dine ordrer og blive en del af Klitmøllers Indkøbsforening.
+                  følge med i dine ordrer og blive en del af Klitmøllers Indkøbsfællesskab.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
