@@ -32,7 +32,12 @@ export function Header() {
   const hasPendingPayment = activeReservations.some(r => r.status === 'ordered' || r.status === 'ready');
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+    <div className="sticky top-0 z-50">
+      {/* Beta Banner */}
+      <div className="bg-accent text-accent-foreground text-center py-1.5 text-xs font-medium">
+        🚧 Beta-version — Denne platform er under udvikling og kun til test
+      </div>
+      <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
       <div className="container-wide">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -43,6 +48,9 @@ export function Header() {
             <span className="hidden sm:block font-serif text-xl font-semibold text-foreground">
               Klitmøller
             </span>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 uppercase tracking-wider border-accent text-accent font-semibold">
+              Beta
+            </Badge>
           </Link>
 
           {/* Desktop Navigation */}
@@ -205,5 +213,6 @@ export function Header() {
         )}
       </div>
     </header>
+    </div>
   );
 }
