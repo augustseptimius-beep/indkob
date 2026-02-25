@@ -1,12 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useCMSContent } from '@/hooks/useCMS';
 import { ArrowRight, Users, Leaf, Package } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
 export function HeroSection() {
-  const { data: content } = useCMSContent();
-  
   const { data: memberCount } = useQuery({
     queryKey: ['member-count'],
     queryFn: async () => {
@@ -44,17 +42,15 @@ export function HeroSection() {
 
           {/* Title */}
           <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-slide-up">
-            {content?.hero_title?.title || 'Klitmøllers Indkøbsfællesskab'}
+            Klitmøllers Indkøbsfællesskab
           </h1>
 
-          {/* Subtitle */}
           <p className="text-xl md:text-2xl text-muted-foreground mb-4 animate-slide-up delay-100">
-            {content?.hero_title?.content || 'Fællesskab gennem fælles indkøb'}
+            Fællesskab gennem fælles indkøb
           </p>
 
-          {/* Description */}
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-slide-up delay-200">
-            {content?.hero_description?.content || 'Vi er en lokal indkøbsforening, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser.'}
+            Vi er et lokalt indkøbsfællesskab, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser.
           </p>
 
           {/* CTAs */}
