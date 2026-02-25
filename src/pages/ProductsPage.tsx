@@ -5,8 +5,6 @@ import { CategoryFilter } from '@/components/products/CategoryFilter';
 import { useProducts, useCategories } from '@/hooks/useProducts';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Search } from 'lucide-react';
 
 type SortOption = 'newest' | 'savings' | 'closest';
@@ -15,18 +13,17 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
-  const [showArrived, setShowArrived] = useState(false);
-  const { data: products, isLoading } = useProducts(selectedCategory || undefined);
+  const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
 
   const filteredAndSortedProducts = useMemo(() => {
     if (!products) return [];
 
-    let filtered = products;
+    let filtered = products.filter(p => p.status === 'open');
 
-    // Filter by status - hide arrived by default (products are always 'open' now)
-    if (!showArrived) {
-      filtered = filtered.filter(p => p.status === 'open');
+    // Filter by category
+    if (selectedCategory) {
+      filtered = filtered.filter(p => p.category_id === selectedCategory);
     }
 
     // Filter by search query
@@ -57,12 +54,11 @@ export default function ProductsPage() {
         break;
       case 'newest':
       default:
-        // Already sorted by created_at desc from the query
         break;
     }
 
     return filtered;
-  }, [products, searchQuery, sortBy, showArrived]);
+  }, [products, searchQuery, sortBy, selectedCategory]);
 
   return (
     <Layout>
@@ -96,25 +92,13 @@ export default function ProductsPage() {
             </Select>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
-            {categories && products && (
-              <CategoryFilter
-                categories={categories.filter(cat => products.some(p => p.category_id === cat.id))}
-                selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
-              />
-            )}
-            <div className="flex items-center gap-2">
-              <Switch
-                id="show-arrived"
-                checked={showArrived}
-                onCheckedChange={setShowArrived}
-              />
-              <Label htmlFor="show-arrived" className="text-sm text-muted-foreground cursor-pointer">
-                Vis ankomne
-              </Label>
-            </div>
-          </div>
+          {categories && products && (
+            <CategoryFilter
+              categories={categories.filter(cat => products.some(p => p.category_id === cat.id))}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+          )}
         </div>
         <ProductGrid products={filteredAndSortedProducts} isLoading={isLoading} />
       </div>
