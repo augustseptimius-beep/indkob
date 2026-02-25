@@ -122,7 +122,7 @@ function wrapEmailContent(bodyHtml: string): string {
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
       <div style="border-bottom: 2px solid #5c6b5a; padding-bottom: 16px; margin-bottom: 24px;">
         <h1 style="color: #5c6b5a; font-size: 24px; margin: 0; font-family: 'Playfair Display', Georgia, serif;">
-          Klitmøllers Indkøbsforening
+          Klitmøllers Indkøbsfællesskab
         </h1>
       </div>
       
@@ -132,7 +132,7 @@ function wrapEmailContent(bodyHtml: string): string {
       
       <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; color: #666; font-size: 14px;">
         <p style="margin: 0;">Med venlig hilsen,</p>
-        <p style="margin: 4px 0 0 0; font-weight: bold;">Klitmøllers Indkøbsforening</p>
+        <p style="margin: 4px 0 0 0; font-weight: bold;">Klitmøllers Indkøbsfællesskab</p>
       </div>
     </div>
   `;
@@ -154,7 +154,7 @@ async function sendEmail(
       Authorization: `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
-      from: "Klitmøllers Indkøbsforening <onboarding@resend.dev>",
+      from: "Klitmøllers Indkøbsfællesskab <onboarding@resend.dev>",
       to,
       subject,
       html: fullHtml,

@@ -43,10 +43,10 @@ export function Header() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-serif font-bold text-lg">K</span>
+              <span className="text-primary-foreground font-serif font-bold text-sm">KIF</span>
             </div>
             <span className="hidden sm:block font-serif text-xl font-semibold text-foreground">
-              Klitmøller
+              Klitmøllers Indkøbsfællesskab
             </span>
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 uppercase tracking-wider border-accent text-accent font-semibold">
               Beta
@@ -66,6 +66,12 @@ export function Header() {
               className="text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
               Ønskeliste
+            </Link>
+            <Link
+              to="/om"
+              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+            >
+              Om os
             </Link>
             {user ? (
               <>
@@ -158,6 +164,13 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Ønskeliste
+              </Link>
+              <Link
+                to="/om"
+                className="text-foreground font-medium py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Om os
               </Link>
               {user ? (
                 <>

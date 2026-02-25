@@ -5,7 +5,7 @@ export default function PrivacyPolicyPage() {
   const { data: content, isLoading } = useCMSContent();
 
   const introText = content?.['privacy_policy_intro']?.content || 
-    'Klitmøllers Indkøbsforening er dataansvarlig for behandlingen af de personoplysninger, vi modtager om dig. Har du spørgsmål til vores behandling af dine oplysninger, er du velkommen til at kontakte os.';
+    'Klitmøllers Indkøbsfællesskab er dataansvarlig for behandlingen af de personoplysninger, vi modtager om dig. Har du spørgsmål til vores behandling af dine oplysninger, er du velkommen til at kontakte os.';
 
   const contactInfo = content?.['privacy_policy_contact']?.content || 'kontakt@klitmoellers-indkoebsforening.dk';
 

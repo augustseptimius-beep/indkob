@@ -449,7 +449,7 @@ export function AdminEmailTemplates() {
                       fontWeight: 600
                     }}
                   >
-                    Klitmøllers Indkøbsforening
+                    Klitmøllers Indkøbsfællesskab
                   </h1>
                   <p 
                     style={{
@@ -503,7 +503,7 @@ export function AdminEmailTemplates() {
                       fontSize: '16px'
                     }}
                   >
-                    Klitmøllers Indkøbsforening
+                    Klitmøllers Indkøbsfællesskab
                   </p>
                   <p 
                     style={{

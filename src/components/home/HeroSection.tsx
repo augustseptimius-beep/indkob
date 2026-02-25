@@ -44,7 +44,7 @@ export function HeroSection() {
 
           {/* Title */}
           <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-slide-up">
-            {content?.hero_title?.title || 'Klitmøllers Indkøbsforening'}
+            {content?.hero_title?.title || 'Klitmøllers Indkøbsfællesskab'}
           </h1>
 
           {/* Subtitle */}

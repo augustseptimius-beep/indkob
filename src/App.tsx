@@ -13,6 +13,7 @@ import MyPage from "./pages/MyPage";
 import WishlistPage from "./pages/WishlistPage";
 import AdminPage from "./pages/AdminPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/oenskeliste" element={<WishlistPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/privatlivspolitik" element={<PrivacyPolicyPage />} />
+            <Route path="/om" element={<AboutPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieBanner />
