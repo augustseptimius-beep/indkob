@@ -1,5 +1,6 @@
 import { Layout } from '@/components/layout/Layout';
 import { Users, Leaf, Package, Heart, MapPin } from 'lucide-react';
+import initiativtagerImg from '@/assets/initiativtager.jpeg';
 
 export default function AboutPage() {
   return (
@@ -84,6 +85,21 @@ export default function AboutPage() {
                 <p><strong className="text-foreground">Afhent dine varer</strong> — Du får besked, når varerne er klar til afhentning i Klitmøller.</p>
               </li>
             </ol>
+          </section>
+
+          {/* About the founder */}
+          <section className="mb-16">
+            <h2 className="font-serif text-2xl font-bold mb-6">Personen bag</h2>
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
+              <img
+                src={initiativtagerImg}
+                alt="Initiativtager til Klitmøllers Indkøbsfællesskab"
+                className="w-32 h-32 rounded-2xl object-cover flex-shrink-0"
+              />
+              <p className="text-muted-foreground leading-relaxed">
+                Jeg hedder Andreas og er initiativtager til Klitmøllers Indkøbsfællesskab. Min hustru og jeg flyttede til Klitmøller i 2022, og i 2024 blev vi forældre til en datter. Vi bor i Redebyg. Tanken om et indkøbsfællesskab opstod, fordi jeg savnede nem adgang til gode råvarer til fornuftige priser herude. Ved at gå sammen kan vi som naboer få adgang til noget bedre — og samtidig lære hinanden lidt bedre at kende.
+              </p>
+            </div>
           </section>
 
           {/* Location */}
