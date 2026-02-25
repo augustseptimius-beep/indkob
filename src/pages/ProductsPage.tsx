@@ -97,9 +97,9 @@ export default function ProductsPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
-            {categories && (
+            {categories && products && (
               <CategoryFilter
-                categories={categories}
+                categories={categories.filter(cat => products.some(p => p.category_id === cat.id))}
                 selectedCategory={selectedCategory}
                 onSelectCategory={setSelectedCategory}
               />
