@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 import { useCreateProduct, useUpdateProduct } from '@/hooks/useProducts';
 import {
   Dialog,
@@ -29,6 +30,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Product, Category, ProductTag } from '@/lib/supabase-types';
+import { Upload, Loader2, X } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const productSchema = z.object({
   title: z.string().min(1, 'Titel er påkrævet'),
@@ -79,6 +82,10 @@ export function ProductFormDialog({
   importedData,
   importedSourceUrl,
 }: ProductFormDialogProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
 
@@ -105,6 +112,7 @@ export function ProductFormDialog({
 
   useEffect(() => {
     if (product) {
+      setPreviewUrl(product.image_url || null);
       form.reset({
         title: product.title,
         description: product.description || '',
@@ -123,7 +131,7 @@ export function ProductFormDialog({
         is_organic: product.is_organic || false,
       });
     } else if (importedData) {
-      // Pre-fill form with imported data
+      setPreviewUrl(importedData.image_url || null);
       form.reset({
         title: importedData.title || '',
         description: importedData.description || '',
@@ -142,6 +150,7 @@ export function ProductFormDialog({
         is_organic: importedData.is_organic || false,
       });
     } else {
+      setPreviewUrl(null);
       form.reset({
         title: '',
         description: '',
@@ -161,6 +170,47 @@ export function ProductFormDialog({
       });
     }
   }, [product, importedData, importedSourceUrl, form]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Fejl', description: 'Filen skal være et billede', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(fileName);
+
+      form.setValue('image_url', publicUrl);
+      setPreviewUrl(publicUrl);
+      toast({ title: 'Billede uploadet' });
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast({ title: 'Fejl', description: 'Kunne ikke uploade billede', variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    form.setValue('image_url', '');
+    setPreviewUrl(null);
+  };
 
   const onSubmit = async (values: ProductFormValues) => {
     const productData = {
@@ -340,19 +390,62 @@ export function ProductFormDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="image_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Billede URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            {/* Image upload / URL */}
+            <div className="space-y-2">
+              <FormLabel>Produktbillede</FormLabel>
+              
+              {previewUrl && (
+                <div className="relative w-32 h-32">
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover rounded-lg border" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               )}
-            />
+
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex items-center gap-2"
+                >
+                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  Upload billede
+                </Button>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="image_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Eller indsæt billede-URL..." {...field} onChange={(e) => {
+                        field.onChange(e);
+                        setPreviewUrl(e.target.value || null);
+                      }} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
