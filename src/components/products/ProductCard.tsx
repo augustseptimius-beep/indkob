@@ -47,7 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <Link to={`/produkt/${product.id}`}>
       <Card className="card-hover overflow-hidden group h-full">
         {/* Image */}
-        <div className="aspect-square relative overflow-hidden bg-secondary">
+        <div className="aspect-square relative overflow-hidden bg-white">
           {product.image_url ? (
             <img
               src={product.image_url}
