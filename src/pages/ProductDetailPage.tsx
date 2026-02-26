@@ -80,7 +80,7 @@ export default function ProductDetailPage() {
           {/* Image */}
           <div className="aspect-square rounded-2xl overflow-hidden bg-secondary">
             {product.image_url ? (
-              <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
+              <img src={product.image_url} alt={product.title} className="w-full h-full object-contain" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <Package className="w-24 h-24 text-muted-foreground/30" />
