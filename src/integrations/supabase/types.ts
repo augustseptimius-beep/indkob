@@ -330,6 +330,67 @@ export type Database = {
         }
         Relationships: []
       }
+      wishlist_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+          wishlist_item_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+          wishlist_item_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          wishlist_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_comments_wishlist_item_id_fkey"
+            columns: ["wishlist_item_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wishlist_votes: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          wishlist_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          wishlist_item_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          wishlist_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_votes_wishlist_item_id_fkey"
+            columns: ["wishlist_item_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
