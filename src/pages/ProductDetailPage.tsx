@@ -78,7 +78,7 @@ export default function ProductDetailPage() {
 
         <div className="grid md:grid-cols-2 gap-12">
           {/* Image */}
-          <div className="aspect-square rounded-2xl overflow-hidden bg-secondary">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-white">
             {product.image_url ? (
               <img src={product.image_url} alt={product.title} className="w-full h-full object-contain" />
             ) : (
