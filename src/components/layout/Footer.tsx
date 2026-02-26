@@ -44,7 +44,9 @@ export function Footer() {
           <div>
             <h4 className="font-serif font-semibold mb-4">Kontakt</h4>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Klitmøllers Indkøbsfællesskab<br />
+              August Septimius Krogh<br />
+              <a href="mailto:augustsk@etik.com" className="hover:text-foreground transition-colors">augustsk@etik.com</a><br />
+              <a href="tel:+4552407764" className="hover:text-foreground transition-colors">52 40 77 64</a><br />
               Klitmøller, Danmark
             </p>
           </div>
