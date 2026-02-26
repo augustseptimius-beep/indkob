@@ -102,16 +102,24 @@ export default function AboutPage() {
             </div>
           </section>
 
-          {/* Location */}
+          {/* Location & Contact */}
           <section>
             <div className="flex items-center gap-2 mb-3">
               <MapPin className="w-5 h-5 text-primary" />
               <h2 className="font-serif text-2xl font-bold">Hvor finder du os?</h2>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               Vi holder til i Klitmøller, Thy — Danmarks Cold Hawaii. Afhentning af varer sker
               lokalt efter nærmere aftale.
             </p>
+            <div className="bg-card rounded-2xl p-6 shadow-sm">
+              <h3 className="font-serif text-lg font-semibold mb-3">Kontakt</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                August Septimius Krogh<br />
+                <a href="mailto:augustsk@etik.com" className="text-primary hover:underline">augustsk@etik.com</a><br />
+                <a href="tel:+4552407764" className="text-primary hover:underline">52 40 77 64</a>
+              </p>
+            </div>
           </section>
         </div>
       </main>
