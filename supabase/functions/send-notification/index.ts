@@ -154,7 +154,7 @@ async function sendEmail(
       Authorization: `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
-      from: "Klitmøllers Indkøbsfællesskab <onboarding@resend.dev>",
+      from: "Klitmøllers Indkøbsfællesskab <noreply@klitkob.dk>",
       to,
       subject,
       html: fullHtml,
