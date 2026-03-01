@@ -185,6 +185,7 @@ export default function MyPage() {
                   return (
                     <Card key={reservation.id}>
                       <CardContent className="py-4">
+                        <h3 className="font-semibold mb-3">{reservation.product?.title}</h3>
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
                             {reservation.product?.image_url ? (
@@ -194,7 +195,6 @@ export default function MyPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">{reservation.product?.title}</h3>
                             {isEditing ? (
                               <div className="flex items-center gap-2 mt-1">
                                 <div className="flex items-center border rounded-lg">
