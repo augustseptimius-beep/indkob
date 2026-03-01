@@ -60,9 +60,15 @@ export default function MyPage() {
   const hasPendingPayment = unpaidReservations.length > 0;
   const paymentInfo = cmsContent?.['payment_info'];
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: string, product?: any) => {
     switch (status) {
-      case 'pending': return 'Afventer flere købere';
+      case 'pending': {
+        if (product) {
+          const remaining = product.target_quantity - product.current_quantity;
+          if (remaining > 0) return `Afventer ${remaining} køb mere`;
+        }
+        return 'Afventer flere købere';
+      }
       case 'ordered': return 'Bestilt hjem';
       case 'ready': return 'Klar til afhentning';
       case 'completed': return 'Afhentet';
@@ -252,7 +258,7 @@ export default function MyPage() {
                             <p className="font-semibold">
                               {((reservation.product?.price_per_unit || 0) * (isEditing ? editQuantity : reservation.quantity)).toFixed(2)} kr
                             </p>
-                            <Badge variant="secondary">{getStatusLabel(reservation.status)}</Badge>
+                            <Badge variant="secondary">{getStatusLabel(reservation.status, reservation.product)}</Badge>
                             {canModify && !isEditing && (
                               <div className="flex items-center gap-1 mt-1">
                                 <Button
