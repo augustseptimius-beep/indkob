@@ -185,7 +185,12 @@ export default function MyPage() {
                   return (
                     <Card key={reservation.id}>
                       <CardContent className="py-4">
-                        <h3 className="font-semibold mb-3">{reservation.product?.title}</h3>
+                        <h3 className="font-semibold">{reservation.product?.title}</h3>
+                        {!isEditing && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {reservation.quantity} {reservation.product?.unit_name} × {reservation.product?.price_per_unit.toFixed(2)} kr
+                          </p>
+                        )}
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
                             {reservation.product?.image_url ? (
@@ -195,7 +200,7 @@ export default function MyPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            {isEditing ? (
+                            {isEditing && (
                               <div className="flex items-center gap-2 mt-1">
                                 <div className="flex items-center border rounded-lg">
                                   <Button
@@ -235,10 +240,6 @@ export default function MyPage() {
                                   <X className="w-4 h-4" />
                                 </Button>
                               </div>
-                            ) : (
-                              <p className="text-sm text-muted-foreground">
-                                {reservation.quantity} {reservation.product?.unit_name} × {reservation.product?.price_per_unit.toFixed(2)} kr
-                              </p>
                             )}
                             {reservation.paid && (
                               <div className="flex items-center gap-1 text-green-600 text-sm mt-1">
