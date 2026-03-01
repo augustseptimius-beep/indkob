@@ -254,9 +254,10 @@ export default function MyPage() {
                               </div>
                             )}
                           </div>
+                          {!isEditing && (
                           <div className="text-right flex flex-col items-end gap-2">
                             <p className="font-semibold">
-                              {((reservation.product?.price_per_unit || 0) * (isEditing ? editQuantity : reservation.quantity)).toFixed(2)} kr
+                              {((reservation.product?.price_per_unit || 0) * reservation.quantity).toFixed(2)} kr
                             </p>
                             <Badge variant="secondary">{getStatusLabel(reservation.status, reservation.product)}</Badge>
                             {canModify && !isEditing && (
@@ -304,6 +305,7 @@ export default function MyPage() {
                               </div>
                             )}
                           </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
