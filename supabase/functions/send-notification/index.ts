@@ -125,7 +125,16 @@ function replaceTemplateVariables(
 }
 
 // Build the email wrapper with site branding
+function inlineListStyles(html: string): string {
+  // Add inline styles to ul/ol/li elements for email client compatibility
+  return html
+    .replace(/<ul(?=[>\s])/g, '<ul style="list-style-type: disc; padding-left: 20px; margin: 8px 0;"')
+    .replace(/<ol(?=[>\s])/g, '<ol style="list-style-type: decimal; padding-left: 20px; margin: 8px 0;"')
+    .replace(/<li(?=[>\s])/g, '<li style="margin-bottom: 4px;"');
+}
+
 function wrapEmailContent(bodyHtml: string): string {
+  const styledBody = inlineListStyles(bodyHtml);
   return `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
       <div style="border-bottom: 2px solid #5c6b5a; padding-bottom: 16px; margin-bottom: 24px;">
@@ -135,7 +144,7 @@ function wrapEmailContent(bodyHtml: string): string {
       </div>
       
       <div style="color: #333;">
-        ${bodyHtml}
+        ${styledBody}
       </div>
       
       <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; color: #666; font-size: 14px;">

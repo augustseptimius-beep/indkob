@@ -425,6 +425,7 @@ export function AdminEmailTemplates() {
                 {/* Content */}
                 <div 
                   style={{ color: '#333' }}
+                  className="[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1"
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
                 />
                 
