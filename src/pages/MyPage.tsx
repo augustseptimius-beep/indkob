@@ -203,7 +203,7 @@ export default function MyPage() {
               <div className="space-y-4">
                 {reservations?.map((reservation) => {
                   const isEditing = editingId === reservation.id;
-                  const canModify = reservation.product?.status === 'open';
+                  const canModify = reservation.product?.status === 'open' && !reservation.paid;
                   const minPurchase = reservation.product?.minimum_purchase || 1;
 
                   return (
