@@ -1,6 +1,7 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, List, ListOrdered, Link, Heading2, Heading3, Minus, Undo, Redo, Type } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Bold, Italic, List, ListOrdered, Link, Heading2, Heading3, Minus, Undo, Redo, Type, Code } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -14,30 +15,55 @@ interface RichTextEditorProps {
 
 export function RichTextEditor({ value, onChange, placeholder, className, availableVariables }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const isInternalChange = useRef(false);
+  const [showHtml, setShowHtml] = useState(false);
+  const lastSelectionRef = useRef<Range | null>(null);
 
-  // Sync value from outside only when not actively editing
+  // Set initial content once
   useEffect(() => {
-    if (editorRef.current && !isInternalChange.current) {
-      if (editorRef.current.innerHTML !== value) {
-        editorRef.current.innerHTML = value;
-      }
+    if (editorRef.current && !showHtml) {
+      editorRef.current.innerHTML = value;
     }
-    isInternalChange.current = false;
-  }, [value]);
+  }, [showHtml]); // Only re-set when switching modes
 
-  const execCmd = useCallback((command: string, value?: string) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false, value);
-    handleInput();
+  const saveSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      lastSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
   }, []);
+
+  const restoreSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && lastSelectionRef.current) {
+      sel.removeAllRanges();
+      sel.addRange(lastSelectionRef.current);
+    }
+  }, []);
+
+  const execCmd = useCallback((command: string, val?: string) => {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+    restoreSelection();
+    document.execCommand(command, false, val);
+    saveSelection();
+    onChange(editorRef.current.innerHTML);
+  }, [onChange, restoreSelection, saveSelection]);
 
   const handleInput = useCallback(() => {
     if (editorRef.current) {
-      isInternalChange.current = true;
+      saveSelection();
       onChange(editorRef.current.innerHTML);
     }
-  }, [onChange]);
+  }, [onChange, saveSelection]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Let the browser handle Ctrl+Z / Ctrl+Y natively
+    // Don't interfere with undo/redo
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    saveSelection();
+  }, [saveSelection]);
 
   const insertLink = useCallback(() => {
     const url = prompt('Indtast URL:');
@@ -47,10 +73,23 @@ export function RichTextEditor({ value, onChange, placeholder, className, availa
   }, [execCmd]);
 
   const insertVariable = useCallback((varKey: string) => {
-    editorRef.current?.focus();
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+    restoreSelection();
     document.execCommand('insertText', false, varKey);
-    handleInput();
-  }, [handleInput]);
+    saveSelection();
+    onChange(editorRef.current.innerHTML);
+  }, [onChange, restoreSelection, saveSelection]);
+
+  const toggleHtmlMode = useCallback(() => {
+    if (showHtml) {
+      // Switching from HTML to WYSIWYG - content is already in value via onChange
+      setShowHtml(false);
+    } else {
+      // Switching from WYSIWYG to HTML
+      setShowHtml(true);
+    }
+  }, [showHtml]);
 
   const toolbarButtons = [
     { icon: Type, label: 'Normal tekst', action: () => execCmd('formatBlock', 'p') },
@@ -75,7 +114,7 @@ export function RichTextEditor({ value, onChange, placeholder, className, availa
       {/* Toolbar */}
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-0.5 p-1.5 border-b bg-muted/30 flex-wrap">
-          {toolbarButtons.map((btn, i) => {
+          {!showHtml && toolbarButtons.map((btn, i) => {
             if ('type' in btn && btn.type === 'separator') {
               return <div key={i} className="w-px h-6 bg-border mx-1" />;
             }
@@ -88,7 +127,10 @@ export function RichTextEditor({ value, onChange, placeholder, className, availa
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
-                    onClick={(e) => { e.preventDefault(); action(); }}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent focus loss from editor
+                      action();
+                    }}
                   >
                     <Icon className="h-3.5 w-3.5" />
                   </Button>
@@ -99,7 +141,7 @@ export function RichTextEditor({ value, onChange, placeholder, className, availa
           })}
 
           {/* Variable insertion dropdown */}
-          {availableVariables && availableVariables.length > 0 && (
+          {!showHtml && availableVariables && availableVariables.length > 0 && (
             <>
               <div className="w-px h-6 bg-border mx-1" />
               <div className="relative group">
@@ -130,24 +172,57 @@ export function RichTextEditor({ value, onChange, placeholder, className, availa
               </div>
             </>
           )}
+
+          {/* HTML toggle - always visible */}
+          <div className="ml-auto">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant={showHtml ? "secondary" : "ghost"}
+                  size="sm"
+                  className="h-7 text-xs px-2 gap-1"
+                  onClick={toggleHtmlMode}
+                >
+                  <Code className="h-3.5 w-3.5" />
+                  HTML
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {showHtml ? 'Skift til visuel editor' : 'Skift til HTML-visning'}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </TooltipProvider>
 
-      {/* Editable area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className="min-h-[200px] p-4 text-sm focus:outline-none prose prose-sm max-w-none
-          [&_p]:my-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2
-          [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1
-          [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
-          [&_a]:text-primary [&_a]:underline
-          [&_hr]:my-4 [&_hr]:border-border"
-        onInput={handleInput}
-        data-placeholder={placeholder}
-        suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: value }}
-      />
+      {/* Editor area */}
+      {showHtml ? (
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="border-0 rounded-none font-mono text-sm min-h-[200px] focus-visible:ring-0 resize-y"
+        />
+      ) : (
+        <div
+          ref={editorRef}
+          contentEditable
+          className="min-h-[200px] p-4 text-sm focus:outline-none prose prose-sm max-w-none
+            [&_p]:my-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2
+            [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1
+            [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
+            [&_a]:text-primary [&_a]:underline
+            [&_hr]:my-4 [&_hr]:border-border"
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          onMouseUp={saveSelection}
+          onKeyUp={saveSelection}
+          data-placeholder={placeholder}
+          suppressContentEditableWarning
+        />
+      )}
     </div>
   );
 }
