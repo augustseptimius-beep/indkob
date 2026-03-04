@@ -54,6 +54,14 @@ export default function MyPage() {
     return sum + price * r.quantity;
   }, 0) || 0;
 
+  const unpaidAmount = reservations?.reduce((sum, r) => {
+    if (r.paid) return sum;
+    const price = r.product?.price_per_unit || 0;
+    return sum + price * r.quantity;
+  }, 0) || 0;
+
+  const paidAmount = totalPrice - unpaidAmount;
+
   const unpaidReservations = reservations?.filter(r => 
     (r.status === 'ordered' || r.status === 'ready') && !r.paid
   ) || [];
@@ -140,11 +148,21 @@ export default function MyPage() {
               <CardContent className="py-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-primary-foreground/80 text-sm">Samlet beløb</p>
-                    <p className="text-3xl font-bold">{totalPrice.toFixed(2)} kr</p>
+                    <p className="text-primary-foreground/80 text-sm">Skyldigt beløb</p>
+                    <p className="text-3xl font-bold">{unpaidAmount.toFixed(2)} kr</p>
                   </div>
                   <CreditCard className="w-10 h-10 opacity-50" />
                 </div>
+                {paidAmount > 0 && (
+                  <p className="text-primary-foreground/70 text-sm mt-2">
+                    ✅ Allerede betalt: {paidAmount.toFixed(2)} kr
+                  </p>
+                )}
+                {totalPrice > 0 && (
+                  <p className="text-primary-foreground/60 text-xs mt-1">
+                    Samlet beløb: {totalPrice.toFixed(2)} kr
+                  </p>
+                )}
                 <p className="text-primary-foreground/70 text-sm mt-4">
                   💡 Betaling sker via MobilePay når varerne er bekræftet
                 </p>

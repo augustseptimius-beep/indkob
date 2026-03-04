@@ -130,7 +130,7 @@ export function AdminOrders() {
         paid: true, 
         paid_at: new Date().toISOString() 
       });
-      toast.success('Reservation markeret som betalt');
+      toast.success('Reservation markeret som betalt — betalingsbekræftelse sendt');
     } catch (error: any) {
       console.error('Error marking reservation as paid:', error);
       toast.error('Kunne ikke markere som betalt', { description: error.message });
