@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useWishlist,
@@ -12,16 +13,18 @@ import {
   useToggleVote,
   useAddComment,
   useWishlistComments,
+  useToggleWishlistAdded,
   type WishlistItemWithMeta,
 } from '@/hooks/useWishlist';
 import { toast } from 'sonner';
-import { Lightbulb, ChevronUp, MessageCircle, ExternalLink, Plus, Send } from 'lucide-react';
+import { Lightbulb, ChevronUp, MessageCircle, ExternalLink, Plus, Send, Check } from 'lucide-react';
 
-function WishlistItemCard({ item }: { item: WishlistItemWithMeta }) {
+function WishlistItemCard({ item, isAdmin }: { item: WishlistItemWithMeta; isAdmin: boolean }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const toggleVote = useToggleVote();
   const addComment = useAddComment();
+  const toggleAdded = useToggleWishlistAdded();
   const { data: comments } = useWishlistComments(showComments ? item.id : null);
 
   const handleVote = () => {
@@ -39,8 +42,12 @@ function WishlistItemCard({ item }: { item: WishlistItemWithMeta }) {
     }
   };
 
+  const handleToggleAdded = () => {
+    toggleAdded.mutate({ id: item.id, is_added: !item.is_added });
+  };
+
   return (
-    <Card>
+    <Card className={item.is_added ? 'border-primary/30 bg-primary/5' : ''}>
       <CardContent className="p-4">
         <div className="flex gap-3">
           {/* Vote button */}
@@ -60,7 +67,15 @@ function WishlistItemCard({ item }: { item: WishlistItemWithMeta }) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-base">{item.title}</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-base">{item.title}</h3>
+                {item.is_added && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Check className="h-3 w-3" />
+                    Tilføjet
+                  </Badge>
+                )}
+              </div>
               {item.link && (
                 <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary flex-shrink-0">
                   <ExternalLink className="h-4 w-4" />
@@ -68,8 +83,12 @@ function WishlistItemCard({ item }: { item: WishlistItemWithMeta }) {
               )}
             </div>
             {item.note && <p className="text-sm text-muted-foreground mt-1">{item.note}</p>}
+            
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Foreslået af <span className="font-medium">{item.creator_name ?? 'Anonym'}</span>
+            </p>
 
-            <div className="mt-3">
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
               <Button
                 variant="ghost"
                 size="sm"
@@ -79,6 +98,19 @@ function WishlistItemCard({ item }: { item: WishlistItemWithMeta }) {
                 <MessageCircle className="h-3.5 w-3.5 mr-1" />
                 {item.comment_count} {item.comment_count === 1 ? 'kommentar' : 'kommentarer'}
               </Button>
+
+              {isAdmin && (
+                <Button
+                  variant={item.is_added ? 'outline' : 'secondary'}
+                  size="sm"
+                  className="h-auto py-1 px-2 text-xs"
+                  onClick={handleToggleAdded}
+                  disabled={toggleAdded.isPending}
+                >
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  {item.is_added ? 'Fjern markering' : 'Markér som tilføjet'}
+                </Button>
+              )}
             </div>
 
             {showComments && (
@@ -113,7 +145,7 @@ function WishlistItemCard({ item }: { item: WishlistItemWithMeta }) {
 }
 
 export default function WishlistPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { data: items, isLoading } = useWishlist();
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -160,7 +192,6 @@ export default function WishlistPage() {
           </Card>
         ) : (
           <div className="max-w-2xl mx-auto space-y-4">
-            {/* New wish button / form */}
             {!showForm ? (
               <Button onClick={() => setShowForm(true)} className="w-full" variant="outline">
                 <Plus className="h-4 w-4 mr-2" /> Foreslå et produkt
@@ -195,13 +226,12 @@ export default function WishlistPage() {
               </Card>
             )}
 
-            {/* List */}
             {isLoading ? (
               <p className="text-center text-muted-foreground py-8">Indlæser...</p>
             ) : sorted.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Ingen ønsker endnu — vær den første!</p>
             ) : (
-              sorted.map((item) => <WishlistItemCard key={item.id} item={item} />)
+              sorted.map((item) => <WishlistItemCard key={item.id} item={item} isAdmin={!!isAdmin} />)
             )}
           </div>
         )}
