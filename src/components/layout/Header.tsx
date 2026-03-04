@@ -28,8 +28,13 @@ export function Header() {
   const activeReservations = reservations?.filter(r => r.status !== 'completed') || [];
   const reservationCount = activeReservations.length;
   
-  // Check if any reservations need payment (ordered or ready status)
-  const hasPendingPayment = activeReservations.some(r => r.status === 'ordered' || r.status === 'ready');
+  // Check if any reservations need payment (ordered or ready, unpaid)
+  const unpaidActive = activeReservations.filter(r => (r.status === 'ordered' || r.status === 'ready') && !r.paid);
+  const hasPendingPayment = unpaidActive.length > 0;
+  
+  // Check if any reservations are paid but not yet picked up
+  const awaitingPickup = activeReservations.filter(r => r.paid && r.status !== 'completed');
+  const hasAwaitingPickup = awaitingPickup.length > 0;
 
   return (
     <div className="sticky top-0 z-50">
@@ -183,11 +188,11 @@ export function Header() {
                     Min side
                     {reservationCount > 0 && (
                       <Badge 
-                        variant={hasPendingPayment ? "destructive" : "default"}
+                        variant={hasPendingPayment ? "destructive" : hasAwaitingPickup ? "default" : "default"}
                         className={hasPendingPayment ? 'animate-pulse' : ''}
                       >
                         {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-1" />}
-                        {reservationCount} {hasPendingPayment ? '- Afventer betaling' : ''}
+                        {reservationCount} {hasPendingPayment ? '- Afventer betaling' : hasAwaitingPickup ? '- Mangler afhentning' : ''}
                       </Badge>
                     )}
                   </Link>
