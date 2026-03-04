@@ -73,6 +73,14 @@ const productTargetReachedSchema = z.object({
   productId: z.string().uuid("Invalid product ID format")
 });
 
+const paymentConfirmedSchema = z.object({
+  type: z.literal("payment_confirmed"),
+  reservationId: z.string().uuid("Invalid reservation ID format"),
+  userId: z.string().uuid("Invalid user ID format"),
+  productId: z.string().uuid("Invalid product ID format"),
+  quantity: z.number()
+});
+
 // HMAC signature verification
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   try {
@@ -531,6 +539,68 @@ async function handleProductTargetReachedEmail(
   return { success: result.success, emailsSent: result.success ? adminEmails.length : 0 };
 }
 
+// Handle payment confirmation email
+async function handlePaymentConfirmedEmail(
+  supabase: SupabaseClient,
+  userId: string,
+  productId: string,
+  quantity: number,
+  resendApiKey: string
+): Promise<{ success: boolean; emailsSent: number }> {
+  const [profile, product] = await Promise.all([
+    getProfileWithEmail(supabase, userId),
+    getProduct(supabase, productId),
+  ]);
+
+  if (!profile?.email || !product) {
+    console.log("Missing profile email or product for payment confirmation");
+    return { success: true, emailsSent: 0 };
+  }
+
+  const template = await getEmailTemplate(supabase, "payment_confirmed");
+  const totalPrice = (quantity * product.price_per_unit).toFixed(2);
+  const variables = {
+    user_name: profile.full_name || "Kære medlem",
+    user_email: profile.email,
+    product_title: product.title,
+    quantity: quantity.toString(),
+    unit_name: product.unit_name,
+    price_per_unit: product.price_per_unit.toString(),
+    total_price: totalPrice,
+    paid_at: new Date().toLocaleDateString("da-DK"),
+  };
+
+  let subject: string;
+  let bodyHtml: string;
+
+  if (template) {
+    subject = replaceTemplateVariables(template.subject, variables);
+    bodyHtml = replaceTemplateVariables(template.body_html, variables);
+  } else {
+    subject = `✅ Betalingsbekræftelse — ${product.title}`;
+    bodyHtml = `
+      <p>Hej ${variables.user_name},</p>
+      <p>Vi bekræfter hermed, at vi har modtaget din betaling for <strong>${product.title}</strong>.</p>
+      
+      <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0;">
+        <h3 style="margin-top: 0; color: #166534;">Betalingskvittering</h3>
+        <p><strong>Produkt:</strong> ${product.title}</p>
+        <p><strong>Antal:</strong> ${quantity} ${product.unit_name}</p>
+        <p><strong>Pris pr. enhed:</strong> ${product.price_per_unit} kr.</p>
+        <p><strong>Total betalt:</strong> ${totalPrice} kr.</p>
+        <p><strong>Dato:</strong> ${variables.paid_at}</p>
+      </div>
+
+      <p>Tak for din betaling! 🎉</p>
+    `;
+  }
+
+  const result = await sendEmail([profile.email], subject, bodyHtml, resendApiKey, {
+    supabase, notificationType: "payment_confirmed", templateKey: "payment_confirmed", productId, userId, recipientName: profile.full_name,
+  });
+  return { success: result.success, emailsSent: result.success ? 1 : 0 };
+}
+
 // Handle product status change (ordered/arrived) - original functionality
 async function handleProductStatusEmail(
   supabase: SupabaseClient,
@@ -787,6 +857,23 @@ const handler = async (req: Request): Promise<Response> => {
       }
       console.log(`Sending product target reached email for product ${validation.data.productId}`);
       result = await handleProductTargetReachedEmail(supabase, validation.data.productId, RESEND_API_KEY);
+
+    } else if (parsedBody.type === "payment_confirmed") {
+      const validation = paymentConfirmedSchema.safeParse(parsedBody);
+      if (!validation.success) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request parameters" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log(`Sending payment confirmation for reservation ${validation.data.reservationId}`);
+      result = await handlePaymentConfirmedEmail(
+        supabase,
+        validation.data.userId,
+        validation.data.productId,
+        validation.data.quantity,
+        RESEND_API_KEY
+      );
 
     } else if (parsedBody.productId && parsedBody.notificationType) {
       // Legacy format for product status changes
