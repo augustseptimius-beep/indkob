@@ -138,12 +138,55 @@ function wrapEmailContent(bodyHtml: string): string {
   `;
 }
 
+// Log email to database
+async function logEmail(
+  supabase: SupabaseClient,
+  params: {
+    recipientEmail: string;
+    recipientName?: string | null;
+    subject: string;
+    templateKey?: string | null;
+    notificationType: string;
+    status: "sent" | "failed";
+    errorMessage?: string | null;
+    productId?: string | null;
+    userId?: string | null;
+  }
+): Promise<void> {
+  try {
+    await supabase.from("email_logs").insert({
+      recipient_email: params.recipientEmail,
+      recipient_name: params.recipientName || null,
+      subject: params.subject,
+      template_key: params.templateKey || null,
+      notification_type: params.notificationType,
+      status: params.status,
+      error_message: params.errorMessage || null,
+      product_id: params.productId || null,
+      user_id: params.userId || null,
+    });
+  } catch (err) {
+    console.error("Failed to log email:", err);
+  }
+}
+
+// Context for logging
+interface EmailContext {
+  supabase: SupabaseClient;
+  notificationType: string;
+  templateKey?: string | null;
+  productId?: string | null;
+  userId?: string | null;
+  recipientName?: string | null;
+}
+
 // Send email via Resend
 async function sendEmail(
   to: string[],
   subject: string,
   bodyHtml: string,
-  resendApiKey: string
+  resendApiKey: string,
+  logCtx?: EmailContext
 ): Promise<{ success: boolean; error?: string }> {
   const fullHtml = wrapEmailContent(bodyHtml);
   
@@ -161,15 +204,35 @@ async function sendEmail(
     }),
   });
 
+  const emailStatus = res.ok ? "sent" as const : "failed" as const;
+  let errorText: string | undefined;
+
   if (!res.ok) {
-    const error = await res.text();
-    console.error(`Failed to send email:`, error);
-    return { success: false, error };
+    errorText = await res.text();
+    console.error(`Failed to send email:`, errorText);
+  } else {
+    const result = await res.json();
+    console.log(`Email sent successfully:`, result);
   }
 
-  const result = await res.json();
-  console.log(`Email sent successfully:`, result);
-  return { success: true };
+  // Log each recipient
+  if (logCtx) {
+    for (const recipient of to) {
+      await logEmail(logCtx.supabase, {
+        recipientEmail: recipient,
+        recipientName: logCtx.recipientName,
+        subject,
+        templateKey: logCtx.templateKey,
+        notificationType: logCtx.notificationType,
+        status: emailStatus,
+        errorMessage: errorText || null,
+        productId: logCtx.productId,
+        userId: logCtx.userId,
+      });
+    }
+  }
+
+  return { success: res.ok, error: errorText };
 }
 
 // Get email template from database
@@ -312,7 +375,9 @@ async function handleWelcomeEmail(
   const subject = replaceTemplateVariables(template.subject, variables);
   const bodyHtml = replaceTemplateVariables(template.body_html, variables);
 
-  const result = await sendEmail([profile.email], subject, bodyHtml, resendApiKey);
+  const result = await sendEmail([profile.email], subject, bodyHtml, resendApiKey, {
+    supabase, notificationType: "welcome", templateKey: "welcome", userId, recipientName: profile.full_name,
+  });
   return { success: result.success, emailsSent: result.success ? 1 : 0 };
 }
 
@@ -356,7 +421,9 @@ async function handleReservationEmail(
   const subject = replaceTemplateVariables(template.subject, variables);
   const bodyHtml = replaceTemplateVariables(template.body_html, variables);
 
-  const result = await sendEmail([profile.email], subject, bodyHtml, resendApiKey);
+  const result = await sendEmail([profile.email], subject, bodyHtml, resendApiKey, {
+    supabase, notificationType: type, templateKey, productId, userId, recipientName: profile.full_name,
+  });
   return { success: result.success, emailsSent: result.success ? 1 : 0 };
 }
 
@@ -403,7 +470,9 @@ async function handleNewProductEmail(
     const subject = replaceTemplateVariables(template.subject, variables);
     const bodyHtml = replaceTemplateVariables(template.body_html, variables);
 
-    const result = await sendEmail([member.email], subject, bodyHtml, resendApiKey);
+    const result = await sendEmail([member.email], subject, bodyHtml, resendApiKey, {
+      supabase, notificationType: "new_product", templateKey: "new_product", productId, recipientName: member.full_name,
+    });
     if (result.success) {
       emailsSent++;
     } else {
@@ -456,7 +525,9 @@ async function handleProductTargetReachedEmail(
   const bodyHtml = replaceTemplateVariables(template.body_html, variables);
 
   console.log(`Sending target reached email to ${adminEmails.length} admins`);
-  const result = await sendEmail(adminEmails, subject, bodyHtml, resendApiKey);
+  const result = await sendEmail(adminEmails, subject, bodyHtml, resendApiKey, {
+    supabase, notificationType: "product_target_reached", templateKey: "product_target_reached", productId,
+  });
   return { success: result.success, emailsSent: result.success ? adminEmails.length : 0 };
 }
 
@@ -579,7 +650,9 @@ async function handleProductStatusEmail(
       }
 
       console.log(`Sending email to ${userEmail}`);
-      return sendEmail([userEmail], subject, bodyHtml, resendApiKey);
+      return sendEmail([userEmail], subject, bodyHtml, resendApiKey, {
+        supabase, notificationType, templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
+      });
     });
 
   const results = await Promise.allSettled(emailPromises);

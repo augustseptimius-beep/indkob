@@ -3,13 +3,14 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen } from 'lucide-react';
+import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen, ScrollText } from 'lucide-react';
 import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminOrders } from '@/components/admin/AdminOrders';
 import { AdminCMS } from '@/components/admin/AdminCMS';
 import { AdminUsers } from '@/components/admin/AdminUsers';
 import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
 import { AdminCategories } from '@/components/admin/AdminCategories';
+import { AdminEmailLog } from '@/components/admin/AdminEmailLog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -112,7 +113,7 @@ export default function AdminPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Produkter</span>
@@ -136,6 +137,10 @@ export default function AdminPage() {
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Brugere</span>
+            </TabsTrigger>
+            <TabsTrigger value="email-log" className="flex items-center gap-2">
+              <ScrollText className="h-4 w-4" />
+              <span className="hidden sm:inline">Email-log</span>
             </TabsTrigger>
           </TabsList>
 
@@ -161,6 +166,10 @@ export default function AdminPage() {
 
           <TabsContent value="users">
             <AdminUsers />
+          </TabsContent>
+
+          <TabsContent value="email-log">
+            <AdminEmailLog />
           </TabsContent>
         </Tabs>
       </div>
