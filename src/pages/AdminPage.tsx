@@ -87,62 +87,67 @@ export default function AdminPage() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-muted-foreground">
-              Administrer produkter, ordrer og indhold
-            </p>
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-1">
+                Admin Dashboard
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                Administrer produkter, ordrer og indhold
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncSigningKey}
+              disabled={isSyncing}
+              className="flex items-center gap-2 self-start"
+            >
+              {isSyncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Key className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Synkroniser signeringsnøgle</span>
+              <span className="sm:hidden">Synk nøgle</span>
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSyncSigningKey}
-            disabled={isSyncing}
-            className="flex items-center gap-2"
-          >
-            {isSyncing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Key className="h-4 w-4" />
-            )}
-            Synkroniser signeringsnøgle
-          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Produkter</span>
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Kategorier</span>
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              <span className="hidden sm:inline">Ordrer</span>
-            </TabsTrigger>
-            <TabsTrigger value="cms" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">CMS</span>
-            </TabsTrigger>
-            <TabsTrigger value="emails" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              <span className="hidden sm:inline">Emails</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Brugere</span>
-            </TabsTrigger>
-            <TabsTrigger value="email-log" className="flex items-center gap-2">
-              <ScrollText className="h-4 w-4" />
-              <span className="hidden sm:inline">Email-log</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 pb-2">
+            <TabsList className="inline-flex w-auto min-w-full sm:min-w-0">
+              <TabsTrigger value="products" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Package className="h-4 w-4" />
+                <span className="hidden sm:inline">Produkter</span>
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <FolderOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Kategorier</span>
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <ClipboardList className="h-4 w-4" />
+                <span className="hidden sm:inline">Ordrer</span>
+              </TabsTrigger>
+              <TabsTrigger value="cms" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">CMS</span>
+              </TabsTrigger>
+              <TabsTrigger value="emails" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Mail className="h-4 w-4" />
+                <span className="hidden sm:inline">Emails</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Brugere</span>
+              </TabsTrigger>
+              <TabsTrigger value="email-log" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <ScrollText className="h-4 w-4" />
+                <span className="hidden sm:inline">Log</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="products">
             <AdminProducts />

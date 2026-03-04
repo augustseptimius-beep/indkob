@@ -194,37 +194,38 @@ export function AdminEmailTemplates() {
         {templates?.map((template) => (
           <Card key={template.id}>
             <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Mail className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold">{template.name}</h3>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-semibold truncate">{template.name}</h3>
                       <Badge variant={template.is_active ? 'default' : 'secondary'}>
                         {template.is_active ? 'Aktiv' : 'Inaktiv'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1">
+                    <p className="text-sm text-muted-foreground mb-1 truncate">
                       {template.subject}
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className="text-xs">
                         {getTriggerLabel(template.trigger_type)}
                       </Badge>
                       {template.description && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground truncate">
                           {template.description}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-8 w-8"
                     onClick={() => handlePreview(template)}
                     title="Forhåndsvis"
                   >
@@ -233,6 +234,7 @@ export function AdminEmailTemplates() {
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-8 w-8"
                     onClick={() => handleEdit(template)}
                     title="Rediger"
                   >
@@ -241,6 +243,7 @@ export function AdminEmailTemplates() {
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-8 w-8"
                     onClick={() => setDeletingTemplate(template)}
                     title="Slet"
                   >
@@ -289,7 +292,7 @@ export function AdminEmailTemplates() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Navn *</Label>
                 <Input

@@ -195,31 +195,33 @@ export function AdminOrders() {
               return (
                 <Card key={reservation.id} className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      {product?.image_url && (
-                        <img
-                          src={product.image_url}
-                          alt={product.title}
-                          className="w-12 h-12 object-cover rounded-lg"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{product?.title}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            {reservation.quantity} {product?.unit_name}
-                          </Badge>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {product?.image_url && (
+                          <img
+                            src={product.image_url}
+                            alt={product.title}
+                            className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-semibold truncate">{product?.title}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {reservation.quantity} {product?.unit_name}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-medium">{userName}</p>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {totalPrice.toFixed(2)} kr
+                          </p>
                         </div>
-                        <p className="text-sm font-medium">{userName}</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {totalPrice.toFixed(2)} kr
-                        </p>
                       </div>
                       <Button
                         onClick={() => markReservationAsPaid(reservation.id)}
                         disabled={markingPaid === reservation.id}
                         size="sm"
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                       >
                         <CheckCircle className="h-4 w-4" />
                         {markingPaid === reservation.id ? 'Markerer...' : 'Marker betalt'}
@@ -246,36 +248,38 @@ export function AdminOrders() {
               return (
                 <Card key={product.id} className="border-green-200 bg-green-50/50">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      {product.image_url && (
-                        <img
-                          src={product.image_url}
-                          alt={product.title}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{product.title}</h3>
-                          <Badge className="bg-green-100 text-green-800">Mål nået</Badge>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Progress
-                            value={(product.current_quantity / product.target_quantity) * 100}
-                            className="h-2 flex-1"
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {product.image_url && (
+                          <img
+                            src={product.image_url}
+                            alt={product.title}
+                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
                           />
-                          <span className="text-sm font-medium">
-                            {product.current_quantity} / {product.target_quantity}
-                          </span>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-semibold truncate">{product.title}</h3>
+                            <Badge className="bg-green-100 text-green-800">Mål nået</Badge>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Progress
+                              value={(product.current_quantity / product.target_quantity) * 100}
+                              className="h-2 flex-1"
+                            />
+                            <span className="text-sm font-medium whitespace-nowrap">
+                              {product.current_quantity} / {product.target_quantity}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {pendingCount} reservationer klar til bestilling
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {pendingCount} reservationer klar til bestilling
-                        </p>
                       </div>
                       <Button
                         onClick={() => markProductAsOrdered(product.id)}
                         disabled={updatingStatus === product.id}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 w-full sm:w-auto"
                       >
                         <Truck className="h-4 w-4" />
                         {updatingStatus === product.id ? 'Bestiller...' : 'Bestil hjem'}
@@ -311,37 +315,39 @@ export function AdminOrders() {
               return (
                 <Card key={productId} className="border-accent/30 bg-accent/5">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      {product?.image_url && (
-                        <img
-                          src={product.image_url}
-                          alt={product?.title || ''}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{product?.title}</h3>
-                          <Badge className="bg-accent/20 text-accent-foreground">Bestilt</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {totalQuantity} {product?.unit_name} fordelt på {batch.length} reservationer
-                        </p>
-                        <div className="mt-2 space-y-1">
-                          {batch.map(r => (
-                            <div key={r.id} className="text-xs text-muted-foreground flex items-center gap-2">
-                              <span>{getUserDisplay(r.user_id)}</span>
-                              <span>•</span>
-                              <span>{r.quantity} {product?.unit_name}</span>
-                            </div>
-                          ))}
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {product?.image_url && (
+                          <img
+                            src={product.image_url}
+                            alt={product?.title || ''}
+                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-semibold truncate">{product?.title}</h3>
+                            <Badge className="bg-accent/20 text-accent-foreground">Bestilt</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {totalQuantity} {product?.unit_name} fordelt på {batch.length} reservationer
+                          </p>
+                          <div className="mt-2 space-y-1">
+                            {batch.map(r => (
+                              <div key={r.id} className="text-xs text-muted-foreground flex items-center gap-2">
+                                <span>{getUserDisplay(r.user_id)}</span>
+                                <span>•</span>
+                                <span>{r.quantity} {product?.unit_name}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                       <Button
                         onClick={() => markBatchAsArrived(productId)}
                         disabled={updatingBatch === productId}
                         variant="outline"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0"
                       >
                         <Package className="h-4 w-4" />
                         {updatingBatch === productId ? 'Opdaterer...' : 'Marker ankommet'}
@@ -378,51 +384,53 @@ export function AdminOrders() {
               return (
                 <Card key={productId}>
                   <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      {product?.image_url && (
-                        <img
-                          src={product.image_url}
-                          alt={product?.title || ''}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{product?.title}</h3>
-                          <Badge className="bg-green-100 text-green-800">Klar til afhentning</Badge>
-                        </div>
-                        <div className="flex items-center gap-4 mt-1 text-xs mb-3">
-                          <span className="text-green-600 flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            {paidCount} betalt
-                          </span>
-                          {unpaidCount > 0 && (
-                            <span className="text-amber-600">
-                              {unpaidCount} afventer betaling
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {product?.image_url && (
+                          <img
+                            src={product.image_url}
+                            alt={product?.title || ''}
+                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-semibold truncate">{product?.title}</h3>
+                            <Badge className="bg-green-100 text-green-800">Klar til afhentning</Badge>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-xs mb-3 flex-wrap">
+                            <span className="text-green-600 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              {paidCount} betalt
                             </span>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          {batch.map(r => (
-                            <div key={r.id} className="flex items-center justify-between text-sm border-t pt-2">
-                              <div>
-                                <span className="font-medium">{getUserDisplay(r.user_id)}</span>
-                                <span className="text-muted-foreground ml-2">{r.quantity} {product?.unit_name}</span>
-                                {r.paid && <Badge variant="outline" className="ml-2 text-xs text-green-600">Betalt</Badge>}
+                            {unpaidCount > 0 && (
+                              <span className="text-amber-600">
+                                {unpaidCount} afventer betaling
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            {batch.map(r => (
+                              <div key={r.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm border-t pt-2 gap-1">
+                                <div className="flex items-center flex-wrap gap-1">
+                                  <span className="font-medium">{getUserDisplay(r.user_id)}</span>
+                                  <span className="text-muted-foreground">{r.quantity} {product?.unit_name}</span>
+                                  {r.paid && <Badge variant="outline" className="text-xs text-green-600">Betalt</Badge>}
+                                </div>
+                                {r.status === 'ready' && r.paid && (
+                                  <Button
+                                    onClick={() => markReservationAsCompleted(r.id)}
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-xs self-start sm:self-auto"
+                                  >
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Afhentet
+                                  </Button>
+                                )}
                               </div>
-                              {r.status === 'ready' && r.paid && (
-                                <Button
-                                  onClick={() => markReservationAsCompleted(r.id)}
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-xs"
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Afhentet
-                                </Button>
-                              )}
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
