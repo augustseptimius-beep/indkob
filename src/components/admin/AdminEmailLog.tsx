@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, ArrowUpDown, Mail, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, ArrowUpDown, Mail, CheckCircle2, XCircle, RotateCcw, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { da } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface EmailLog {
   id: string;
@@ -43,6 +45,8 @@ export function AdminEmailLog() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ['email-logs'],
@@ -56,6 +60,43 @@ export function AdminEmailLog() {
       return data as EmailLog[];
     },
   });
+
+  const handleResend = async (logId: string) => {
+    setResendingId(logId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Du skal være logget ind');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/resend-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ emailLogId: logId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success('Email gensendt!');
+        queryClient.invalidateQueries({ queryKey: ['email-logs'] });
+      } else {
+        toast.error(result.error || 'Kunne ikke gensende email');
+      }
+    } catch (error) {
+      console.error('Resend error:', error);
+      toast.error('Der opstod en fejl');
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -172,6 +213,7 @@ export function AdminEmailLog() {
                   <TableHead>
                     <SortButton field="status">Status</SortButton>
                   </TableHead>
+                  <TableHead className="w-[70px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -203,6 +245,24 @@ export function AdminEmailLog() {
                           <XCircle className="h-4 w-4" />
                           <span className="text-xs">Fejlet</span>
                         </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {log.status === 'failed' && log.template_key && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Gensend email"
+                          disabled={resendingId === log.id}
+                          onClick={() => handleResend(log.id)}
+                        >
+                          {resendingId === log.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RotateCcw className="h-4 w-4" />
+                          )}
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
