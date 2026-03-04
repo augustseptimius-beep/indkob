@@ -473,7 +473,13 @@ async function handleNewProductEmail(
   let emailsSent = 0;
   let emailsFailed = 0;
 
-  for (const member of members) {
+  for (let i = 0; i < members.length; i++) {
+    // Wait 600ms between emails to stay under Resend's 2 req/sec limit
+    if (i > 0) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
+
+    const member = members[i];
     const variables = {
       user_name: member.full_name || "Kære medlem",
       user_email: member.email,
@@ -666,78 +672,88 @@ async function handleProductStatusEmail(
     }
   }
 
-  // Send emails to all users who reserved
-  const emailPromises = typedReservations
-    .filter(r => {
-      const profile = profileMap.get(r.user_id);
-      return profile?.email;
-    })
-    .map(async (reservation) => {
-      const profile = profileMap.get(reservation.user_id)!;
-      const userEmail = profile.email!;
-      const userName = profile.full_name || "Kære medlem";
-      const totalPrice = (reservation.quantity * product.price_per_unit).toFixed(2);
+  // Send emails sequentially with delay to avoid Resend rate limiting (max 2/sec)
+  const eligibleReservations = typedReservations.filter(r => {
+    const profile = profileMap.get(r.user_id);
+    return profile?.email;
+  });
 
-      const variables: Record<string, string> = {
-        user_name: userName,
-        user_email: userEmail,
-        product_title: product.title,
-        quantity: reservation.quantity.toString(),
-        unit_name: product.unit_name,
-        price_per_unit: product.price_per_unit.toString(),
-        total_price: totalPrice,
-        mobilepay_number: mobilepayNumber,
-        paid_at: new Date().toLocaleDateString('da-DK'),
-      };
+  let successCount = 0;
+  let failCount = 0;
 
-      let subject: string;
-      let bodyHtml: string;
+  for (let i = 0; i < eligibleReservations.length; i++) {
+    // Wait 600ms between emails to stay under 2 req/sec limit
+    if (i > 0) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
 
-      if (emailTemplate) {
-        subject = replaceTemplateVariables(emailTemplate.subject, variables);
-        bodyHtml = replaceTemplateVariables(emailTemplate.body_html, variables);
-      } else {
-        subject = notificationType === "ordered"
-          ? `🛒 ${product.title} er nu bestilt!`
-          : `📦 ${product.title} er kommet hjem!`;
+    const reservation = eligibleReservations[i];
+    const profile = profileMap.get(reservation.user_id)!;
+    const userEmail = profile.email!;
+    const userName = profile.full_name || "Kære medlem";
+    const totalPrice = (reservation.quantity * product.price_per_unit).toFixed(2);
 
-        const statusText = notificationType === "ordered"
-          ? "er nu bestilt hos leverandøren"
-          : "er ankommet og klar til afhentning";
+    const variables: Record<string, string> = {
+      user_name: userName,
+      user_email: userEmail,
+      product_title: product.title,
+      quantity: reservation.quantity.toString(),
+      unit_name: product.unit_name,
+      price_per_unit: product.price_per_unit.toString(),
+      total_price: totalPrice,
+      mobilepay_number: mobilepayNumber,
+      paid_at: new Date().toLocaleDateString('da-DK'),
+    };
 
-        const paymentNote = notificationType === "arrived"
-          ? `<p style="background-color: #fef3c7; padding: 16px; border-radius: 8px; margin-top: 20px;">
-              <strong>💳 Betaling:</strong> Betal venligst via MobilePay til ${mobilepayNumber}. 
-              Husk at skrive dit navn i beskeden.
-            </p>`
-          : "";
+    let subject: string;
+    let bodyHtml: string;
 
-        bodyHtml = `
-          <p>Hej ${userName},</p>
-          <p>Vi vil gerne informere dig om, at <strong>${product.title}</strong> ${statusText}.</p>
-          
-          <div style="background-color: #f8f7f4; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Din reservation:</h3>
-            <p><strong>Produkt:</strong> ${product.title}</p>
-            <p><strong>Antal:</strong> ${reservation.quantity} ${product.unit_name}</p>
-            <p><strong>Pris pr. enhed:</strong> ${product.price_per_unit} kr.</p>
-            <p><strong>Total:</strong> ${totalPrice} kr.</p>
-          </div>
-          
-          ${paymentNote}
-        `;
-      }
+    if (emailTemplate) {
+      subject = replaceTemplateVariables(emailTemplate.subject, variables);
+      bodyHtml = replaceTemplateVariables(emailTemplate.body_html, variables);
+    } else {
+      subject = notificationType === "ordered"
+        ? `🛒 ${product.title} er nu bestilt!`
+        : `📦 ${product.title} er kommet hjem!`;
 
-      console.log(`Sending email to ${userEmail}`);
-      return sendEmail([userEmail], subject, bodyHtml, resendApiKey, {
-        supabase, notificationType, templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
-      });
+      const statusText = notificationType === "ordered"
+        ? "er nu bestilt hos leverandøren"
+        : "er ankommet og klar til afhentning";
+
+      const paymentNote = notificationType === "arrived"
+        ? `<p style="background-color: #fef3c7; padding: 16px; border-radius: 8px; margin-top: 20px;">
+            <strong>💳 Betaling:</strong> Betal venligst via MobilePay til ${mobilepayNumber}. 
+            Husk at skrive dit navn i beskeden.
+          </p>`
+        : "";
+
+      bodyHtml = `
+        <p>Hej ${userName},</p>
+        <p>Vi vil gerne informere dig om, at <strong>${product.title}</strong> ${statusText}.</p>
+        
+        <div style="background-color: #f8f7f4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">Din reservation:</h3>
+          <p><strong>Produkt:</strong> ${product.title}</p>
+          <p><strong>Antal:</strong> ${reservation.quantity} ${product.unit_name}</p>
+          <p><strong>Pris pr. enhed:</strong> ${product.price_per_unit} kr.</p>
+          <p><strong>Total:</strong> ${totalPrice} kr.</p>
+        </div>
+        
+        ${paymentNote}
+      `;
+    }
+
+    console.log(`Sending email to ${userEmail}`);
+    const result = await sendEmail([userEmail], subject, bodyHtml, resendApiKey, {
+      supabase, notificationType, templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
     });
-
-  const results = await Promise.allSettled(emailPromises);
-  
-  const successCount = results.filter(r => r.status === "fulfilled" && r.value.success).length;
-  const failCount = results.filter(r => r.status === "rejected" || (r.status === "fulfilled" && !r.value.success)).length;
+    
+    if (result.success) {
+      successCount++;
+    } else {
+      failCount++;
+    }
+  }
 
   // Update reservation statuses
   const reservationStatus = notificationType === "ordered" ? "ordered" : "ready";
