@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from './RichTextEditor';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -341,35 +341,12 @@ export function AdminEmailTemplates() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="body">Indhold (HTML) *</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 gap-1">
-                        <Info className="h-3 w-3" />
-                        Tilgængelige variabler
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
-                      <div className="space-y-1">
-                        {AVAILABLE_VARIABLES.map((v) => (
-                          <div key={v.key} className="text-xs">
-                            <code className="bg-muted px-1 rounded">{v.key}</code>
-                            <span className="ml-2 text-muted-foreground">{v.desc}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Textarea
-                id="body"
+              <Label>Indhold *</Label>
+              <RichTextEditor
                 value={formData.body_html}
-                onChange={(e) => setFormData({ ...formData, body_html: e.target.value })}
-                placeholder="<p>Hej {{user_name}},</p>..."
-                className="font-mono text-sm min-h-[200px]"
+                onChange={(html) => setFormData({ ...formData, body_html: html })}
+                placeholder="Skriv dit email-indhold her..."
+                availableVariables={AVAILABLE_VARIABLES}
               />
             </div>
 
@@ -424,102 +401,37 @@ export function AdminEmailTemplates() {
           </div>
           
           {/* Email preview container - scrollable */}
-          <div className="flex-1 overflow-y-auto border rounded-lg bg-slate-100">
+          <div className="flex-1 overflow-y-auto border rounded-lg bg-muted/30">
             <div className="p-4">
-              {/* Email wrapper - exact match with edge function wrapEmailContent */}
+              {/* Email wrapper - matches wrapEmailContent in edge function */}
               <div 
                 style={{ 
+                  fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                   maxWidth: '600px',
                   margin: '0 auto',
+                  padding: '20px',
                   backgroundColor: '#ffffff',
                   borderRadius: '8px',
-                  overflow: 'hidden',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
                 }}
               >
-                {/* Header */}
-                <div 
-                  style={{
-                    backgroundColor: '#5c6b5a',
-                    padding: '24px',
-                    textAlign: 'center' as const
-                  }}
-                >
-                  <h1 
-                    style={{
-                      color: '#ffffff',
-                      margin: 0,
-                      fontSize: '28px',
-                      fontFamily: "'Playfair Display', Georgia, serif",
-                      fontWeight: 600
-                    }}
-                  >
+                {/* Header - matches edge function */}
+                <div style={{ borderBottom: '2px solid #5c6b5a', paddingBottom: '16px', marginBottom: '24px' }}>
+                  <h1 style={{ color: '#5c6b5a', fontSize: '24px', margin: 0, fontFamily: "'Playfair Display', Georgia, serif" }}>
                     Klitmøllers Indkøbsfællesskab
                   </h1>
-                  <p 
-                    style={{
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      margin: '8px 0 0 0',
-                      fontSize: '14px',
-                      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-                    }}
-                  >
-                    Fælles indkøb af kvalitetsvarer
-                  </p>
                 </div>
                 
                 {/* Content */}
                 <div 
-                  style={{
-                    padding: '32px 24px',
-                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                    fontSize: '16px',
-                    lineHeight: 1.6,
-                    color: '#333333'
-                  }}
+                  style={{ color: '#333' }}
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
                 />
                 
-                {/* Footer */}
-                <div 
-                  style={{
-                    backgroundColor: '#f8f9fa',
-                    padding: '24px',
-                    borderTop: '1px solid #e9ecef',
-                    textAlign: 'center' as const
-                  }}
-                >
-                  <p 
-                    style={{
-                      margin: 0,
-                      color: '#5c6b5a',
-                      fontWeight: 600,
-                      fontSize: '14px',
-                      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-                    }}
-                  >
-                    Med venlig hilsen,
-                  </p>
-                  <p 
-                    style={{
-                      margin: '4px 0 0 0',
-                      color: '#5c6b5a',
-                      fontFamily: "'Playfair Display', Georgia, serif",
-                      fontSize: '16px'
-                    }}
-                  >
-                    Klitmøllers Indkøbsfællesskab
-                  </p>
-                  <p 
-                    style={{
-                      margin: '16px 0 0 0',
-                      color: '#6c757d',
-                      fontSize: '12px',
-                      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-                    }}
-                  >
-                    Denne email er sendt automatisk. Besvar venligst ikke denne email.
-                  </p>
+                {/* Footer - matches edge function */}
+                <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #e5e5e5', color: '#666', fontSize: '14px' }}>
+                  <p style={{ margin: 0 }}>Med venlig hilsen,</p>
+                  <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>Klitmøllers Indkøbsfællesskab</p>
                 </div>
               </div>
             </div>
