@@ -1,0 +1,1 @@
+ALTER TABLE public.wishlist ADD COLUMN is_added boolean NOT NULL DEFAULT false;
