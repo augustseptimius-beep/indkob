@@ -18,6 +18,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -51,7 +52,12 @@ export default function AuthPage() {
           setIsLoading(false);
           return;
         }
-        const { error } = await signUp(email, password, fullName);
+        if (!phone.trim()) {
+          toast.error('Indtast venligst dit telefonnummer');
+          setIsLoading(false);
+          return;
+        }
+        const { error } = await signUp(email, password, fullName, phone);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error('Denne email er allerede registreret');
@@ -159,17 +165,30 @@ export default function AuthPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!isLogin && (
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Fulde navn</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Dit navn"
-                      required={!isLogin}
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Fulde navn</Label>
+                      <Input
+                        id="fullName"
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Dit navn"
+                        required={!isLogin}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefonnummer</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="12 34 56 78"
+                        required={!isLogin}
+                      />
+                    </div>
+                  </>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
