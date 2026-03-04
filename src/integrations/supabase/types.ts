@@ -56,6 +56,48 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          notification_type: string
+          product_id: string | null
+          recipient_email: string
+          recipient_name: string | null
+          status: string
+          subject: string
+          template_key: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          product_id?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          status?: string
+          subject: string
+          template_key?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          product_id?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          status?: string
+          subject?: string
+          template_key?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body_html: string
