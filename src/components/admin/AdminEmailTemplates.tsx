@@ -193,17 +193,17 @@ export function AdminEmailTemplates() {
 
       <div className="grid gap-4">
         {templates?.map((template) => (
-          <Card key={template.id}>
+          <Card key={template.id} className="overflow-hidden">
             <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Mail className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-semibold truncate">{template.name}</h3>
-                      <Badge variant={template.is_active ? 'default' : 'secondary'}>
+                      <h3 className="font-semibold truncate max-w-[calc(100%-70px)]">{template.name}</h3>
+                      <Badge variant={template.is_active ? 'default' : 'secondary'} className="shrink-0">
                         {template.is_active ? 'Aktiv' : 'Inaktiv'}
                       </Badge>
                     </div>
@@ -211,18 +211,18 @@ export function AdminEmailTemplates() {
                       {template.subject}
                     </p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs shrink-0">
                         {getTriggerLabel(template.trigger_type)}
                       </Badge>
                       {template.description && (
-                        <span className="text-xs text-muted-foreground truncate">
+                        <span className="text-xs text-muted-foreground line-clamp-1">
                           {template.description}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 pl-[52px]">
                   <Button
                     variant="outline"
                     size="icon"
