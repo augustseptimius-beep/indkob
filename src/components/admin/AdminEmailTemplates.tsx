@@ -44,6 +44,7 @@ const TRIGGER_TYPES = [
   { value: 'product_status_ordered', label: 'Produkt bestilt (auto)' },
   { value: 'product_status_arrived', label: 'Produkt ankommet (auto)' },
   { value: 'payment_confirmed', label: 'Betaling bekræftet (auto)' },
+  { value: 'automatic', label: 'Automatisk' },
   { value: 'manual', label: 'Manuel udsendelse' },
 ];
 
@@ -177,14 +178,14 @@ export function AdminEmailTemplates() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-semibold">Email-skabeloner</h2>
           <p className="text-sm text-muted-foreground">
             Rediger indholdet af automatiske emails
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <Button onClick={handleCreate} className="flex items-center gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Ny skabelon
         </Button>
