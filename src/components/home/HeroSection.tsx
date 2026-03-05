@@ -24,16 +24,16 @@ export function HeroSection() {
       <div className="container-wide relative py-20 md:py-32">
         <div className="max-w-3xl mx-auto text-center">
           {/* Badge with member count */}
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 py-2 rounded-2xl sm:rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
             <div className="flex items-center gap-2">
-              <Leaf className="w-4 h-4" />
+              <Leaf className="w-4 h-4 shrink-0" />
               <span className="text-sm font-medium">Fællesskab & Bæredygtighed</span>
             </div>
             {memberCount !== undefined && memberCount > 0 && (
               <>
-                <span className="w-px h-4 bg-primary/30" />
+                <span className="hidden sm:block w-px h-4 bg-primary/30" />
                 <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4" />
+                  <Users className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-semibold">{memberCount} medlemmer</span>
                 </div>
               </>
