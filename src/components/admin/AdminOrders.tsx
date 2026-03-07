@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Check, Package, Truck, Mail, CreditCard, CheckCircle } from 'lucide-react';
+import { Check, Package, Truck, Mail, CreditCard, CheckCircle, Clock, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Reservation } from '@/lib/supabase-types';
 
