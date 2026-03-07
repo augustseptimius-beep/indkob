@@ -73,6 +73,11 @@ const productTargetReachedSchema = z.object({
   productId: z.string().uuid("Invalid product ID format")
 });
 
+const productAlmostReachedSchema = z.object({
+  type: z.literal("product_almost_reached"),
+  productId: z.string().uuid("Invalid product ID format")
+});
+
 const paymentConfirmedSchema = z.object({
   type: z.literal("payment_confirmed"),
   reservationId: z.string().uuid("Invalid reservation ID format"),
@@ -554,6 +559,86 @@ async function handleProductTargetReachedEmail(
   return { success: result.success, emailsSent: result.success ? adminEmails.length : 0 };
 }
 
+// Handle product almost reached notification to all members
+async function handleProductAlmostReachedEmail(
+  supabase: SupabaseClient,
+  productId: string,
+  resendApiKey: string
+): Promise<{ success: boolean; emailsSent: number; emailsFailed: number }> {
+  const product = await getProduct(supabase, productId);
+  if (!product) {
+    console.log("Product not found");
+    return { success: false, emailsSent: 0, emailsFailed: 0 };
+  }
+
+  const template = await getEmailTemplate(supabase, "product_almost_reached");
+  
+  const members = await getAllMemberEmails(supabase);
+  if (members.length === 0) {
+    console.log("No members to notify");
+    return { success: true, emailsSent: 0, emailsFailed: 0 };
+  }
+
+  const remaining = product.target_quantity - product.current_quantity;
+
+  console.log(`Sending product almost reached email to ${members.length} members`);
+
+  let emailsSent = 0;
+  let emailsFailed = 0;
+
+  for (let i = 0; i < members.length; i++) {
+    if (i > 0) {
+      await new Promise(resolve => setTimeout(resolve, 600));
+    }
+
+    const member = members[i];
+    const variables = {
+      user_name: member.full_name || "Kære medlem",
+      user_email: member.email,
+      product_title: product.title,
+      remaining_quantity: remaining.toString(),
+      current_quantity: product.current_quantity.toString(),
+      target_quantity: product.target_quantity.toString(),
+      unit_name: product.unit_name,
+      price_per_unit: product.price_per_unit.toString(),
+      minimum_purchase: product.minimum_purchase?.toString() || "1",
+    };
+
+    let subject: string;
+    let bodyHtml: string;
+
+    if (template) {
+      subject = replaceTemplateVariables(template.subject, variables);
+      bodyHtml = replaceTemplateVariables(template.body_html, variables);
+    } else {
+      subject = `🔥 ${product.title} mangler kun ${remaining} ${product.unit_name} — hjælp os i mål!`;
+      bodyHtml = `
+        <p>Hej ${variables.user_name},</p>
+        <p><strong>${product.title}</strong> er tæt på at nå sit mål! Der mangler kun <strong>${remaining} ${product.unit_name}</strong> før vi kan bestille hjem.</p>
+        
+        <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #fbbf24;">
+          <p style="margin: 0 0 8px 0;"><strong>Status:</strong> ${product.current_quantity} af ${product.target_quantity} ${product.unit_name} tilmeldt</p>
+          <p style="margin: 0 0 8px 0;"><strong>Pris:</strong> ${product.price_per_unit} kr/${product.unit_name}</p>
+          <p style="margin: 0;"><strong>Mangler:</strong> ${remaining} ${product.unit_name}</p>
+        </div>
+        
+        <p>Gå ind på <a href="https://indkob.lovable.app/produkter" style="color: #5c6b5a; font-weight: bold;">vores side</a> og tilmeld dig, så vi kan nå målet! 🎯</p>
+      `;
+    }
+
+    const result = await sendEmail([member.email], subject, bodyHtml, resendApiKey, {
+      supabase, notificationType: "product_almost_reached", templateKey: "product_almost_reached", productId, recipientName: member.full_name,
+    });
+    if (result.success) {
+      emailsSent++;
+    } else {
+      emailsFailed++;
+    }
+  }
+
+  return { success: true, emailsSent, emailsFailed };
+}
+
 // Handle payment confirmation email
 async function handlePaymentConfirmedEmail(
   supabase: SupabaseClient,
@@ -882,6 +967,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
       console.log(`Sending product target reached email for product ${validation.data.productId}`);
       result = await handleProductTargetReachedEmail(supabase, validation.data.productId, RESEND_API_KEY);
+
+    } else if (parsedBody.type === "product_almost_reached") {
+      const validation = productAlmostReachedSchema.safeParse(parsedBody);
+      if (!validation.success) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request parameters" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log(`Sending product almost reached email for product ${validation.data.productId}`);
+      result = await handleProductAlmostReachedEmail(supabase, validation.data.productId, RESEND_API_KEY);
 
     } else if (parsedBody.type === "payment_confirmed") {
       const validation = paymentConfirmedSchema.safeParse(parsedBody);
