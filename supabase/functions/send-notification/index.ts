@@ -968,6 +968,17 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Sending product target reached email for product ${validation.data.productId}`);
       result = await handleProductTargetReachedEmail(supabase, validation.data.productId, RESEND_API_KEY);
 
+    } else if (parsedBody.type === "product_almost_reached") {
+      const validation = productAlmostReachedSchema.safeParse(parsedBody);
+      if (!validation.success) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request parameters" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log(`Sending product almost reached email for product ${validation.data.productId}`);
+      result = await handleProductAlmostReachedEmail(supabase, validation.data.productId, RESEND_API_KEY);
+
     } else if (parsedBody.type === "payment_confirmed") {
       const validation = paymentConfirmedSchema.safeParse(parsedBody);
       if (!validation.success) {
