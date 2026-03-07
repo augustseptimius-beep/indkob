@@ -97,10 +97,24 @@ export function ProductCard({ product }: ProductCardProps) {
                 {product.comparison_price.toFixed(2)} kr/{product.unit_name} *
               </p>
             )}
-            <p className="text-xl font-semibold text-foreground">
-              {product.price_per_unit.toFixed(2)} kr
-              <span className="text-sm font-normal text-muted-foreground">/{product.unit_name}</span>
-            </p>
+            {product.minimum_purchase > 1 ? (
+              <>
+                <p className="text-xl font-semibold text-foreground">
+                  {(product.price_per_unit * product.minimum_purchase).toFixed(2)} kr
+                  <span className="text-sm font-normal text-muted-foreground">
+                    /{product.minimum_purchase} {product.unit_name}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ({product.price_per_unit.toFixed(2)} kr/{product.unit_name})
+                </p>
+              </>
+            ) : (
+              <p className="text-xl font-semibold text-foreground">
+                {product.price_per_unit.toFixed(2)} kr
+                <span className="text-sm font-normal text-muted-foreground">/{product.unit_name}</span>
+              </p>
+            )}
           </div>
 
           {/* Comparison note */}

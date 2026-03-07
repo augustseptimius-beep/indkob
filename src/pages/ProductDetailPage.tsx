@@ -114,12 +114,24 @@ export default function ProductDetailPage() {
                   {product.comparison_price.toFixed(2)} kr/{product.unit_name} *
                 </p>
               )}
-              <div className="flex items-baseline gap-2">
+              {product.minimum_purchase > 1 ? (
+                <>
+                  <p className="text-3xl font-bold">
+                    {(product.price_per_unit * product.minimum_purchase).toFixed(2)} kr
+                    <span className="text-lg font-normal text-muted-foreground">
+                      /{product.minimum_purchase} {product.unit_name}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    ({product.price_per_unit.toFixed(2)} kr/{product.unit_name})
+                  </p>
+                </>
+              ) : (
                 <p className="text-3xl font-bold">
                   {product.price_per_unit.toFixed(2)} kr
                   <span className="text-lg font-normal text-muted-foreground">/{product.unit_name}</span>
                 </p>
-              </div>
+              )}
             </div>
 
             {/* Comparison note */}
@@ -172,7 +184,7 @@ export default function ProductDetailPage() {
                   </Button>
                 </div>
                 <Button onClick={handleReserve} disabled={createReservation.isPending} size="lg" className="flex-1">
-                  Reserver {quantity} {product.unit_name}
+                  Reserver {quantity} {product.minimum_purchase > 1 ? `× ${product.minimum_purchase} ${product.unit_name}` : product.unit_name}
                 </Button>
               </div>
             )}
