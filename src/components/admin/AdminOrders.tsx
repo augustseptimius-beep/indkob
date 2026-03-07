@@ -45,6 +45,17 @@ export function AdminOrders() {
     (p) => p.status === 'open' && p.current_quantity >= p.target_quantity
   );
 
+  // Open products with pending reservations but target NOT yet reached
+  const awaitingMore = useMemo(() => {
+    if (!products || !allReservations) return [];
+    const productIdsWithPending = new Set(
+      allReservations.filter(r => r.status === 'pending').map(r => r.product_id)
+    );
+    return products.filter(
+      p => p.status === 'open' && p.current_quantity < p.target_quantity && productIdsWithPending.has(p.id)
+    );
+  }, [products, allReservations]);
+
   // Group ordered reservations by product (batch tracking)
   const orderedReservationsByProduct = useMemo(() => {
     const map: Record<string, Reservation[]> = {};
