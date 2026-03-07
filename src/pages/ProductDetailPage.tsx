@@ -184,7 +184,7 @@ export default function ProductDetailPage() {
                   </Button>
                 </div>
                 <Button onClick={handleReserve} disabled={createReservation.isPending} size="lg" className="flex-1">
-                  Reserver {quantity} {product.unit_name}
+                  Reserver {quantity} {product.minimum_purchase > 1 ? `× ${product.minimum_purchase} ${product.unit_name}` : product.unit_name}
                 </Button>
               </div>
             )}
