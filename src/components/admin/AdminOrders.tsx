@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Check, Package, Truck, Mail, CreditCard, CheckCircle } from 'lucide-react';
+import { Check, Package, Truck, Mail, CreditCard, CheckCircle, Clock, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Reservation } from '@/lib/supabase-types';
 
@@ -44,6 +44,17 @@ export function AdminOrders() {
   const readyToOrder = products?.filter(
     (p) => p.status === 'open' && p.current_quantity >= p.target_quantity
   );
+
+  // Open products with pending reservations but target NOT yet reached
+  const awaitingMore = useMemo(() => {
+    if (!products || !allReservations) return [];
+    const productIdsWithPending = new Set(
+      allReservations.filter(r => r.status === 'pending').map(r => r.product_id)
+    );
+    return products.filter(
+      p => p.status === 'open' && p.current_quantity < p.target_quantity && productIdsWithPending.has(p.id)
+    );
+  }, [products, allReservations]);
 
   // Group ordered reservations by product (batch tracking)
   const orderedReservationsByProduct = useMemo(() => {
@@ -298,6 +309,72 @@ export function AdminOrders() {
           </Card>
         )}
       </section>
+
+      {/* Awaiting more reservations - open products with pending reservations, target not yet reached */}
+      {awaitingMore.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            Afventer flere tilmeldinger ({awaitingMore.length})
+          </h2>
+          <div className="grid gap-4">
+            {awaitingMore.map((product) => {
+              const pending = pendingReservationsByProduct[product.id] || [];
+              const totalPendingQty = pending.reduce((sum, r) => sum + r.quantity, 0);
+              const progressVal = (product.current_quantity / product.target_quantity) * 100;
+              const remaining = product.target_quantity - product.current_quantity;
+
+              return (
+                <Card key={product.id} className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {product.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt={product.title}
+                          className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-semibold truncate">{product.title}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            Mangler {remaining} {product.unit_name}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Progress value={progressVal} className="h-2 flex-1" />
+                          <span className="text-sm font-medium whitespace-nowrap">
+                            {product.current_quantity} / {product.target_quantity} {product.unit_name}
+                          </span>
+                        </div>
+
+                        {/* Reservation list */}
+                        <div className="bg-background/60 rounded-lg p-3 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5" />
+                            {pending.length} tilmelding{pending.length !== 1 ? 'er' : ''} — {totalPendingQty} {product.unit_name} reserveret
+                          </p>
+                          <div className="divide-y divide-border">
+                            {pending.map(r => (
+                              <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
+                                <span className="font-medium truncate">{getUserDisplay(r.user_id)}</span>
+                                <span className="text-muted-foreground whitespace-nowrap ml-2">
+                                  {r.quantity} {product.unit_name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Ordered Batches - reservations with status 'ordered', grouped by product */}
       <section>
