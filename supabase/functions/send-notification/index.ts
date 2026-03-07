@@ -73,6 +73,11 @@ const productTargetReachedSchema = z.object({
   productId: z.string().uuid("Invalid product ID format")
 });
 
+const productAlmostReachedSchema = z.object({
+  type: z.literal("product_almost_reached"),
+  productId: z.string().uuid("Invalid product ID format")
+});
+
 const paymentConfirmedSchema = z.object({
   type: z.literal("payment_confirmed"),
   reservationId: z.string().uuid("Invalid reservation ID format"),
