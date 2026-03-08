@@ -48,8 +48,13 @@ export default function AuthPage() {
           navigate('/min-side');
         }
       } else {
-        if (!fullName.trim()) {
-          toast.error('Indtast venligst dit navn');
+        if (!firstName.trim()) {
+          toast.error('Indtast venligst dit fornavn');
+          setIsLoading(false);
+          return;
+        }
+        if (!lastName.trim()) {
+          toast.error('Indtast venligst dit efternavn');
           setIsLoading(false);
           return;
         }
@@ -58,7 +63,7 @@ export default function AuthPage() {
           setIsLoading(false);
           return;
         }
-        const { error } = await signUp(email, password, fullName, phone);
+        const { error } = await signUp(email, password, firstName, lastName, phone);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error('Denne email er allerede registreret');
