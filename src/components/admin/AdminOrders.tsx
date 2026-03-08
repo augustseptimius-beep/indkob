@@ -20,7 +20,6 @@ export function AdminOrders() {
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [updatingBatch, setUpdatingBatch] = useState<string | null>(null);
 
-  // Fetch all profiles for admin view
   const { data: profiles } = useQuery({
     queryKey: ['admin-profiles'],
     queryFn: async () => {
@@ -40,12 +39,10 @@ export function AdminOrders() {
 
   const isLoading = productsLoading || reservationsLoading;
 
-  // Products ready to order (target reached, status open)
   const readyToOrder = products?.filter(
     (p) => p.status === 'open' && p.current_quantity >= p.target_quantity
   );
 
-  // Open products with pending reservations but target NOT yet reached
   const awaitingMore = useMemo(() => {
     if (!products || !allReservations) return [];
     const productIdsWithPending = new Set(
@@ -56,7 +53,6 @@ export function AdminOrders() {
     );
   }, [products, allReservations]);
 
-  // Group ordered reservations by product (batch tracking)
   const orderedReservationsByProduct = useMemo(() => {
     const map: Record<string, Reservation[]> = {};
     allReservations?.filter(r => r.status === 'ordered').forEach(r => {
@@ -66,7 +62,6 @@ export function AdminOrders() {
     return map;
   }, [allReservations]);
 
-  // Group ready reservations by product (arrived batches)
   const readyReservationsByProduct = useMemo(() => {
     const map: Record<string, Reservation[]> = {};
     allReservations?.filter(r => r.status === 'ready').forEach(r => {
@@ -76,12 +71,10 @@ export function AdminOrders() {
     return map;
   }, [allReservations]);
 
-  // Unpaid reservations across ordered + ready
   const unpaidReservations = allReservations?.filter(
     (r) => (r.status === 'ordered' || r.status === 'ready') && !r.paid
   ) || [];
 
-  // Count pending reservations per product (for ready-to-order section)
   const pendingReservationsByProduct = useMemo(() => {
     const map: Record<string, Reservation[]> = {};
     allReservations?.filter(r => r.status === 'pending').forEach(r => {
@@ -91,21 +84,25 @@ export function AdminOrders() {
     return map;
   }, [allReservations]);
 
+  const orderedProductIds = Object.keys(orderedReservationsByProduct);
+  const readyProductIds = Object.keys(readyReservationsByProduct);
+
+  // Stats
+  const stats = useMemo(() => ({
+    unpaidPayments: unpaidReservations.length,
+    readyToOrder: readyToOrder?.length || 0,
+    orderedBatches: orderedProductIds.length,
+    readyForPickup: readyProductIds.length,
+  }), [unpaidReservations, readyToOrder, orderedProductIds, readyProductIds]);
+
   const markProductAsOrdered = async (productId: string) => {
     setUpdatingStatus(productId);
     try {
-      // This triggers the DB trigger which:
-      // 1. Marks all pending reservations as 'ordered'
-      // 2. Resets current_quantity to 0
-      // 3. Sets product status back to 'open'
       await updateProduct.mutateAsync({ id: productId, status: 'ordered' });
-      toast.success(
-        'Produktet er bestilt hjem',
-        { 
-          description: 'Reservationer er markeret som bestilt. Produktet er åbent igen for nye tilmeldinger.',
-          icon: <Mail className="h-4 w-4" />
-        }
-      );
+      toast.success('Produktet er bestilt hjem', {
+        description: 'Reservationer er markeret som bestilt. Produktet er åbent igen for nye tilmeldinger.',
+        icon: <Mail className="h-4 w-4" />
+      });
     } catch (error: any) {
       console.error('Error updating product status:', error);
       toast.error('Kunne ikke opdatere status', { description: error.message });
@@ -121,10 +118,7 @@ export function AdminOrders() {
       for (const reservation of batch) {
         await updateReservation.mutateAsync({ id: reservation.id, status: 'ready' });
       }
-      toast.success(
-        `${batch.length} reservationer markeret som klar til afhentning`,
-        { icon: <Package className="h-4 w-4" /> }
-      );
+      toast.success(`${batch.length} reservationer markeret som klar til afhentning`, { icon: <Package className="h-4 w-4" /> });
     } catch (error: any) {
       console.error('Error marking batch as arrived:', error);
       toast.error('Kunne ikke opdatere batch', { description: error.message });
@@ -136,11 +130,7 @@ export function AdminOrders() {
   const markReservationAsPaid = async (reservationId: string) => {
     setMarkingPaid(reservationId);
     try {
-      await updateReservation.mutateAsync({ 
-        id: reservationId, 
-        paid: true, 
-        paid_at: new Date().toISOString() 
-      });
+      await updateReservation.mutateAsync({ id: reservationId, paid: true, paid_at: new Date().toISOString() });
       toast.success('Reservation markeret som betalt — betalingsbekræftelse sendt');
     } catch (error: any) {
       console.error('Error marking reservation as paid:', error);
@@ -173,11 +163,40 @@ export function AdminOrders() {
     return <div className="text-center py-8">Indlæser ordrer...</div>;
   }
 
-  const orderedProductIds = Object.keys(orderedReservationsByProduct);
-  const readyProductIds = Object.keys(readyReservationsByProduct);
-
   return (
     <div className="space-y-8">
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card className={stats.unpaidPayments > 0 ? 'border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' : ''}>
+          <CardContent className="p-4 text-center">
+            <CreditCard className="h-5 w-5 mx-auto mb-1 text-amber-600" />
+            <div className="text-2xl font-bold">{stats.unpaidPayments}</div>
+            <div className="text-xs text-muted-foreground">Ubetalte</div>
+          </CardContent>
+        </Card>
+        <Card className={stats.readyToOrder > 0 ? 'border-green-300 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20' : ''}>
+          <CardContent className="p-4 text-center">
+            <Check className="h-5 w-5 mx-auto mb-1 text-green-600" />
+            <div className="text-2xl font-bold">{stats.readyToOrder}</div>
+            <div className="text-xs text-muted-foreground">Klar til bestilling</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Truck className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-2xl font-bold">{stats.orderedBatches}</div>
+            <div className="text-xs text-muted-foreground">Bestilte batches</div>
+          </CardContent>
+        </Card>
+        <Card className={stats.readyForPickup > 0 ? 'border-primary/30 bg-primary/5' : ''}>
+          <CardContent className="p-4 text-center">
+            <Package className="h-5 w-5 mx-auto mb-1 text-primary" />
+            <div className="text-2xl font-bold">{stats.readyForPickup}</div>
+            <div className="text-xs text-muted-foreground">Klar til afhentning</div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Info banner */}
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="py-4">
@@ -209,23 +228,15 @@ export function AdminOrders() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         {product?.image_url && (
-                          <img
-                            src={product.image_url}
-                            alt={product.title}
-                            className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
-                          />
+                          <img src={product.image_url} alt={product.title} className="w-12 h-12 object-cover rounded-lg flex-shrink-0" />
                         )}
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h3 className="font-semibold truncate">{product?.title}</h3>
-                            <Badge variant="outline" className="text-xs">
-                              {reservation.quantity} {product?.unit_name}
-                            </Badge>
+                            <Badge variant="outline" className="text-xs">{reservation.quantity} {product?.unit_name}</Badge>
                           </div>
                           <p className="text-sm font-medium">{userName}</p>
-                          <p className="text-sm text-muted-foreground mt-0.5">
-                            {totalPrice.toFixed(2)} kr
-                          </p>
+                          <p className="text-sm text-muted-foreground mt-0.5">{totalPrice.toFixed(2)} kr</p>
                         </div>
                       </div>
                       <Button
@@ -246,7 +257,7 @@ export function AdminOrders() {
         </section>
       )}
 
-      {/* Ready to Order - products where target is reached */}
+      {/* Ready to Order */}
       <section>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Check className="h-5 w-5 text-green-600" />
@@ -262,11 +273,7 @@ export function AdminOrders() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         {product.image_url && (
-                          <img
-                            src={product.image_url}
-                            alt={product.title}
-                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
-                          />
+                          <img src={product.image_url} alt={product.title} className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -274,17 +281,10 @@ export function AdminOrders() {
                             <Badge className="bg-green-100 text-green-800">Mål nået</Badge>
                           </div>
                           <div className="flex items-center gap-2 mb-2">
-                            <Progress
-                              value={(product.current_quantity / product.target_quantity) * 100}
-                              className="h-2 flex-1"
-                            />
-                            <span className="text-sm font-medium whitespace-nowrap">
-                              {product.current_quantity} / {product.target_quantity}
-                            </span>
+                            <Progress value={(product.current_quantity / product.target_quantity) * 100} className="h-2 flex-1" />
+                            <span className="text-sm font-medium whitespace-nowrap">{product.current_quantity} / {product.target_quantity}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {pendingCount} reservationer klar til bestilling
-                          </p>
+                          <p className="text-sm text-muted-foreground">{pendingCount} reservationer klar til bestilling</p>
                         </div>
                       </div>
                       <Button
@@ -310,7 +310,7 @@ export function AdminOrders() {
         )}
       </section>
 
-      {/* Awaiting more reservations - open products with pending reservations, target not yet reached */}
+      {/* Awaiting more */}
       {awaitingMore.length > 0 && (
         <section>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -329,27 +329,17 @@ export function AdminOrders() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       {product.image_url && (
-                        <img
-                          src={product.image_url}
-                          alt={product.title}
-                          className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
-                        />
+                        <img src={product.image_url} alt={product.title} className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-semibold truncate">{product.title}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            Mangler {remaining} {product.unit_name}
-                          </Badge>
+                          <Badge variant="outline" className="text-xs">Mangler {remaining} {product.unit_name}</Badge>
                         </div>
                         <div className="flex items-center gap-2 mb-3">
                           <Progress value={progressVal} className="h-2 flex-1" />
-                          <span className="text-sm font-medium whitespace-nowrap">
-                            {product.current_quantity} / {product.target_quantity} {product.unit_name}
-                          </span>
+                          <span className="text-sm font-medium whitespace-nowrap">{product.current_quantity} / {product.target_quantity} {product.unit_name}</span>
                         </div>
-
-                        {/* Reservation list */}
                         <div className="bg-background/60 rounded-lg p-3 space-y-2">
                           <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                             <Users className="h-3.5 w-3.5" />
@@ -359,9 +349,7 @@ export function AdminOrders() {
                             {pending.map(r => (
                               <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
                                 <span className="font-medium truncate">{getUserDisplay(r.user_id)}</span>
-                                <span className="text-muted-foreground whitespace-nowrap ml-2">
-                                  {r.quantity} {product.unit_name}
-                                </span>
+                                <span className="text-muted-foreground whitespace-nowrap ml-2">{r.quantity} {product.unit_name}</span>
                               </div>
                             ))}
                           </div>
@@ -376,7 +364,7 @@ export function AdminOrders() {
         </section>
       )}
 
-      {/* Ordered Batches - reservations with status 'ordered', grouped by product */}
+      {/* Ordered Batches */}
       <section>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Truck className="h-5 w-5 text-accent" />
@@ -395,26 +383,25 @@ export function AdminOrders() {
                     <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         {product?.image_url && (
-                          <img
-                            src={product.image_url}
-                            alt={product?.title || ''}
-                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
-                          />
+                          <img src={product.image_url} alt={product?.title || ''} className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h3 className="font-semibold truncate">{product?.title}</h3>
-                            <Badge className="bg-accent/20 text-accent-foreground">Bestilt</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {totalQuantity} {product?.unit_name} fordelt på {batch.length} reservationer
+                          <h3 className="font-semibold truncate mb-1">{product?.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {batch.length} reservationer — {totalQuantity} {product?.unit_name} total
                           </p>
-                          <div className="mt-2 space-y-1">
+                          <div className="space-y-1.5">
                             {batch.map(r => (
-                              <div key={r.id} className="text-xs text-muted-foreground flex items-center gap-2">
-                                <span>{getUserDisplay(r.user_id)}</span>
-                                <span>•</span>
-                                <span>{r.quantity} {product?.unit_name}</span>
+                              <div key={r.id} className="flex items-center justify-between text-sm">
+                                <span className="font-medium truncate">{getUserDisplay(r.user_id)}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground">{r.quantity} {product?.unit_name}</span>
+                                  {r.paid ? (
+                                    <Badge className="bg-green-100 text-green-800 text-xs">Betalt</Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Ubetalt</Badge>
+                                  )}
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -424,7 +411,7 @@ export function AdminOrders() {
                         onClick={() => markBatchAsArrived(productId)}
                         disabled={updatingBatch === productId}
                         variant="outline"
-                        className="flex items-center gap-2 w-full sm:w-auto flex-shrink-0"
+                        className="flex items-center gap-2 w-full sm:w-auto"
                       >
                         <Package className="h-4 w-4" />
                         {updatingBatch === productId ? 'Opdaterer...' : 'Marker ankommet'}
@@ -438,76 +425,59 @@ export function AdminOrders() {
         ) : (
           <Card>
             <CardContent className="p-6 text-center text-muted-foreground">
-              Ingen batches afventer levering.
+              Ingen bestilte batches.
             </CardContent>
           </Card>
         )}
       </section>
 
-      {/* Arrived Batches - reservations with status 'ready', grouped by product */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Package className="h-5 w-5 text-green-600" />
-          Ankomne batches ({readyProductIds.length})
-        </h2>
-        {readyProductIds.length > 0 ? (
+      {/* Ready for Pickup */}
+      {readyProductIds.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" />
+            Klar til afhentning ({readyProductIds.length})
+          </h2>
           <div className="grid gap-4">
             {readyProductIds.map((productId) => {
               const product = getProductById(productId);
               const batch = readyReservationsByProduct[productId];
-              const paidCount = batch.filter(r => r.paid).length;
-              const unpaidCount = batch.length - paidCount;
+              const totalQuantity = batch.reduce((sum, r) => sum + r.quantity, 0);
               
               return (
-                <Card key={productId}>
+                <Card key={productId} className="border-primary/30 bg-primary/5">
                   <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-3">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        {product?.image_url && (
-                          <img
-                            src={product.image_url}
-                            alt={product?.title || ''}
-                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h3 className="font-semibold truncate">{product?.title}</h3>
-                            <Badge className="bg-green-100 text-green-800">Klar til afhentning</Badge>
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs mb-3 flex-wrap">
-                            <span className="text-green-600 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              {paidCount} betalt
-                            </span>
-                            {unpaidCount > 0 && (
-                              <span className="text-amber-600">
-                                {unpaidCount} afventer betaling
-                              </span>
-                            )}
-                          </div>
-                          <div className="space-y-2">
-                            {batch.map(r => (
-                              <div key={r.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm border-t pt-2 gap-1">
-                                <div className="flex items-center flex-wrap gap-1">
-                                  <span className="font-medium">{getUserDisplay(r.user_id)}</span>
-                                  <span className="text-muted-foreground">{r.quantity} {product?.unit_name}</span>
-                                  {r.paid && <Badge variant="outline" className="text-xs text-green-600">Betalt</Badge>}
-                                </div>
-                                {r.status === 'ready' && r.paid && (
-                                  <Button
-                                    onClick={() => markReservationAsCompleted(r.id)}
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-xs self-start sm:self-auto"
-                                  >
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    Afhentet
-                                  </Button>
+                    <div className="flex items-start gap-3">
+                      {product?.image_url && (
+                        <img src={product.image_url} alt={product?.title || ''} className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate mb-1">{product?.title}</h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {batch.length} reservationer — {totalQuantity} {product?.unit_name} total
+                        </p>
+                        <div className="space-y-2">
+                          {batch.map(r => (
+                            <div key={r.id} className="flex items-center justify-between text-sm">
+                              <span className="font-medium truncate">{getUserDisplay(r.user_id)}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">{r.quantity} {product?.unit_name}</span>
+                                {r.paid ? (
+                                  <Badge className="bg-green-100 text-green-800 text-xs">Betalt</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Ubetalt</Badge>
                                 )}
+                                <Button
+                                  onClick={() => markReservationAsCompleted(r.id)}
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                >
+                                  Afhentet
+                                </Button>
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -516,14 +486,8 @@ export function AdminOrders() {
               );
             })}
           </div>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              Ingen batches er ankommet endnu.
-            </CardContent>
-          </Card>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
