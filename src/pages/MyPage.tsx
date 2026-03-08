@@ -153,16 +153,6 @@ export default function MyPage() {
                   </div>
                   <CreditCard className="w-10 h-10 opacity-50" />
                 </div>
-                {paidAmount > 0 && (
-                  <p className="text-primary-foreground/70 text-sm mt-2">
-                    ✅ Allerede betalt: {paidAmount.toFixed(2)} kr
-                  </p>
-                )}
-                {totalPrice > 0 && (
-                  <p className="text-primary-foreground/60 text-xs mt-1">
-                    Samlet beløb: {totalPrice.toFixed(2)} kr
-                  </p>
-                )}
                 <p className="text-primary-foreground/70 text-sm mt-4">
                   💡 Betaling sker via MobilePay når varerne er bekræftet
                 </p>
