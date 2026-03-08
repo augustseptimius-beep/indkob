@@ -17,7 +17,8 @@ export default function AuthPage() {
   const [isRecovery, setIsRecovery] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
@@ -47,8 +48,13 @@ export default function AuthPage() {
           navigate('/min-side');
         }
       } else {
-        if (!fullName.trim()) {
-          toast.error('Indtast venligst dit navn');
+        if (!firstName.trim()) {
+          toast.error('Indtast venligst dit fornavn');
+          setIsLoading(false);
+          return;
+        }
+        if (!lastName.trim()) {
+          toast.error('Indtast venligst dit efternavn');
           setIsLoading(false);
           return;
         }
@@ -57,7 +63,7 @@ export default function AuthPage() {
           setIsLoading(false);
           return;
         }
-        const { error } = await signUp(email, password, fullName, phone);
+        const { error } = await signUp(email, password, firstName, lastName, phone);
         if (error) {
           if (error.message.includes('already registered')) {
             toast.error('Denne email er allerede registreret');
@@ -166,16 +172,29 @@ export default function AuthPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!isLogin && (
                   <>
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Fulde navn</Label>
-                      <Input
-                        id="fullName"
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Dit navn"
-                        required={!isLogin}
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">Fornavn</Label>
+                        <Input
+                          id="firstName"
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="Fornavn"
+                          required={!isLogin}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Efternavn</Label>
+                        <Input
+                          id="lastName"
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Efternavn"
+                          required={!isLogin}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefonnummer</Label>
