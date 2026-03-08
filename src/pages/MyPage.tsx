@@ -220,13 +220,14 @@ export default function MyPage() {
                             const isEditing = editingId === reservation.id;
                             const canModify = reservation.product?.status === 'open' && !reservation.paid;
                             const minPurchase = reservation.product?.minimum_purchase || 1;
+                            const needsPayment = (reservation.status === 'ordered' || reservation.status === 'ready') && !reservation.paid;
 
                             return (
                               <Card key={reservation.id} className={status === 'completed' ? 'opacity-60' : ''}>
                                 <CardContent className="py-4">
-                                  <div className="flex items-start gap-4">
+                                  <div className="flex items-start gap-3">
                                     {/* Image */}
-                                    <Link to={`/produkt/${reservation.product_id}`} className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
+                                    <Link to={`/produkt/${reservation.product_id}`} className="w-14 h-14 md:w-20 md:h-20 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
                                       {reservation.product?.image_url ? (
                                         <img src={reservation.product.image_url} alt="" className="w-full h-full object-cover" />
                                       ) : (
@@ -234,119 +235,100 @@ export default function MyPage() {
                                       )}
                                     </Link>
 
-                                    {/* Info */}
+                                    {/* Info + Price */}
                                     <div className="flex-1 min-w-0">
-                                      <Link to={`/produkt/${reservation.product_id}`} className="hover:text-primary transition-colors">
-                                        <h3 className="font-semibold truncate">{reservation.product?.title}</h3>
-                                      </Link>
+                                      <div className="flex items-start justify-between gap-2">
+                                        <Link to={`/produkt/${reservation.product_id}`} className="hover:text-primary transition-colors min-w-0 flex-1">
+                                          <h3 className="font-semibold text-sm md:text-base truncate">{reservation.product?.title}</h3>
+                                        </Link>
+                                        {!isEditing && (
+                                          <p className="font-semibold text-sm md:text-base whitespace-nowrap shrink-0">
+                                            {((reservation.product?.price_per_unit || 0) * reservation.quantity).toFixed(2)} kr
+                                          </p>
+                                        )}
+                                      </div>
 
                                       {isEditing ? (
-                                        <div className="flex items-center gap-2 mt-2">
+                                        <div className="flex items-center gap-2 mt-2 flex-wrap">
                                           <div className="flex items-center border rounded-lg">
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-8 w-8"
-                                              onClick={() => setEditQuantity(Math.max(minPurchase, editQuantity - 1))}
-                                            >
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditQuantity(Math.max(minPurchase, editQuantity - 1))}>
                                               <Minus className="w-3 h-3" />
                                             </Button>
                                             <span className="w-10 text-center text-sm font-medium">{editQuantity}</span>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-8 w-8"
-                                              onClick={() => setEditQuantity(editQuantity + 1)}
-                                            >
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditQuantity(editQuantity + 1)}>
                                               <Plus className="w-3 h-3" />
                                             </Button>
                                           </div>
-                                          <span className="text-sm text-muted-foreground">{reservation.product?.unit_name}</span>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
-                                            onClick={() => saveQuantity(reservation.id)}
-                                            disabled={updateReservation.isPending}
-                                          >
+                                          <span className="text-xs text-muted-foreground">{reservation.product?.unit_name}</span>
+                                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-green-600 hover:text-green-700" onClick={() => saveQuantity(reservation.id)} disabled={updateReservation.isPending}>
                                             <Save className="w-4 h-4" />
                                           </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0"
-                                            onClick={cancelEditing}
-                                          >
+                                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={cancelEditing}>
                                             <X className="w-4 h-4" />
                                           </Button>
                                         </div>
                                       ) : (
-                                        <p className="text-sm text-muted-foreground mt-0.5">
-                                          {reservation.quantity} {reservation.product?.unit_name} × {reservation.product?.price_per_unit.toFixed(2)} kr
-                                        </p>
-                                      )}
+                                        <>
+                                          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                                            {reservation.quantity} {reservation.product?.unit_name} × {reservation.product?.price_per_unit.toFixed(2)} kr
+                                          </p>
 
-                                      {reservation.paid && (
-                                        <div className="flex items-center gap-1 text-green-600 text-sm mt-1">
-                                          <CheckCircle className="h-3 w-3" />
-                                          <span>Betalt</span>
-                                        </div>
+                                          {reservation.paid && (
+                                            <div className="flex items-center gap-1 text-green-600 text-xs mt-1">
+                                              <CheckCircle className="h-3 w-3" />
+                                              <span>Betalt</span>
+                                            </div>
+                                          )}
+
+                                          {canModify && (
+                                            <div className="flex items-center gap-1 mt-2">
+                                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => startEditing(reservation.id, reservation.quantity)}>
+                                                <Pencil className="w-3 h-3 mr-1" />
+                                                Ændr
+                                              </Button>
+                                              <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive hover:text-destructive">
+                                                    <Trash2 className="w-3 h-3 mr-1" />
+                                                    Annuller
+                                                  </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                    <AlertDialogTitle>Annuller reservation?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                      Er du sikker på, at du vil annullere din reservation af{' '}
+                                                      <strong>{reservation.quantity} {reservation.product?.unit_name} {reservation.product?.title}</strong>?
+                                                    </AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                    <AlertDialogCancel>Behold</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDelete(reservation.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                      Ja, annuller
+                                                    </AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                              </AlertDialog>
+                                            </div>
+                                          )}
+                                        </>
                                       )}
                                     </div>
-
-                                    {/* Price & Actions */}
-                                    {!isEditing && (
-                                      <div className="text-right flex flex-col items-end gap-2 shrink-0">
-                                        <p className="font-semibold">
-                                          {((reservation.product?.price_per_unit || 0) * reservation.quantity).toFixed(2)} kr
-                                        </p>
-                                        {canModify && (
-                                          <div className="flex items-center gap-1 mt-1">
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-7 px-2 text-xs"
-                                              onClick={() => startEditing(reservation.id, reservation.quantity)}
-                                            >
-                                              <Pencil className="w-3 h-3 mr-1" />
-                                              Ændr
-                                            </Button>
-                                            <AlertDialog>
-                                              <AlertDialogTrigger asChild>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                                                >
-                                                  <Trash2 className="w-3 h-3 mr-1" />
-                                                  Annuller
-                                                </Button>
-                                              </AlertDialogTrigger>
-                                              <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                  <AlertDialogTitle>Annuller reservation?</AlertDialogTitle>
-                                                  <AlertDialogDescription>
-                                                    Er du sikker på, at du vil annullere din reservation af{' '}
-                                                    <strong>{reservation.quantity} {reservation.product?.unit_name} {reservation.product?.title}</strong>?
-                                                    Denne handling kan ikke fortrydes.
-                                                  </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                  <AlertDialogCancel>Behold</AlertDialogCancel>
-                                                  <AlertDialogAction
-                                                    onClick={() => handleDelete(reservation.id)}
-                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                  >
-                                                    Ja, annuller
-                                                  </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                              </AlertDialogContent>
-                                            </AlertDialog>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
                                   </div>
+
+                                  {/* Payment notice for items ready for payment */}
+                                  {needsPayment && paymentInfo?.content && (
+                                    <div className="mt-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 flex items-start gap-3">
+                                      <Smartphone className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                                      <div className="text-xs md:text-sm">
+                                        <p className="font-semibold text-green-800 dark:text-green-300">Klar til betaling</p>
+                                        <p className="text-green-700 dark:text-green-400 mt-0.5">
+                                          Overfør <strong>{((reservation.product?.price_per_unit || 0) * reservation.quantity).toFixed(2)} kr</strong> til MobilePay: <strong>{paymentInfo.content}</strong>
+                                        </p>
+                                        <p className="text-green-600 dark:text-green-500 mt-1">Skriv dit fulde navn i beskedfeltet</p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </CardContent>
                               </Card>
                             );
