@@ -1,34 +1,64 @@
 
 
-## Plan: Forbedret Brugeradministration
+# Forbered backend til Stripe-integration
 
-### Oversigt
-Opgraderer AdminUsers-komponenten med tre hovedelementer: bruger-vækst graf, søgefunktion, og mulighed for at slette brugere.
+## Overblik
 
-### Hvad der bygges
+Platformen bruger i dag manuel MobilePay-betaling. Vi forbereder databasen og en edge function-stub så Stripe kan tilkobles senere uden at ændre eksisterende tabeller.
 
-**1. Statistik-kort og vækstgraf (recharts)**
-- Kort der viser: Totalt antal brugere, nye denne måned, antal admins
-- Linjegraf der viser bruger-tilgang over tid (baseret på `profiles.created_at`)
-- Data grupperes pr. uge/måned afhængig af antal brugere
+## Ændringer
 
-**2. Søgning og filtrering**
-- Søgefelt der filtrerer på navn (client-side fra allerede hentet data)
-- Filter-mulighed for rolle (alle / admin / medlem)
-- Tabelvisning i stedet for kort-layout for bedre overblik ved mange brugere
+### 1. Database: `payments`-tabel
 
-**3. Sletning af brugere**
-- Slet-knap pr. bruger med bekræftelsesdialog
-- Sletningen fjerner brugerens profil, reservationer, wishlist, roller og kommentarer via klient-side kaskade (samme mønster som DeleteAccountSection)
-- Auth-brugeren kan ikke slettes fra klienten (kræver service role), men alle public-data ryddes
-- Admin kan ikke slette sig selv
+Ny tabel til at tracke Stripe-betalinger, adskilt fra `reservations.paid`-feltet:
 
-### Tekniske detaljer
+- `id` (uuid, PK)
+- `reservation_id` (uuid, FK → reservations)
+- `user_id` (uuid, not null)
+- `amount` (numeric, not null) — beløb i DKK
+- `currency` (text, default 'dkk')
+- `stripe_payment_intent_id` (text, nullable) — Stripe PI reference
+- `stripe_checkout_session_id` (text, nullable)
+- `status` (text: 'pending' | 'succeeded' | 'failed' | 'refunded', default 'pending')
+- `created_at`, `updated_at`
 
-**Filer der ændres:**
-- `src/components/admin/AdminUsers.tsx` - komplet omskrivning med de tre features
+RLS: Brugere kan se egne, admins kan se alle. Insert via service role (edge function).
 
-**Ingen databaseændringer** - alt data hentes fra eksisterende `profiles` og `user_roles` tabeller. Grafen beregnes client-side ud fra `created_at` timestamps.
+### 2. Database: `stripe_config`-tabel (nøgle-værdi)
 
-**Afhængigheder** - bruger eksisterende `recharts`, `lucide-react`, shadcn-komponenter (Table, Input, Select, AlertDialog).
+Til at gemme Stripe-relaterede indstillinger (webhook secret key reference, etc.):
+
+- `key` (text, PK)
+- `value` (text)
+- `updated_at`
+
+RLS: Kun admin SELECT/UPDATE.
+
+### 3. Edge function stub: `stripe-webhook`
+
+En tom edge function klar til at modtage Stripe webhooks:
+- CORS headers
+- Signature-verifikation placeholder
+- Handler for `checkout.session.completed` og `payment_intent.succeeded`
+- Opdaterer `payments`-tabellen og sætter `reservations.paid = true`
+
+### 4. Edge function stub: `create-checkout`
+
+En stub til at oprette Stripe Checkout sessions:
+- Modtager `reservation_id`
+- Slår reservation + produkt op
+- Returnerer placeholder-response (Stripe SDK tilføjes senere)
+
+### 5. Config
+
+Tilføj begge edge functions til `supabase/config.toml` med `verify_jwt = false`.
+
+## Hvad der IKKE gøres
+
+- Stripe SDK installeres ikke
+- Ingen Stripe API-kald
+- Ingen UI-ændringer
+- Ingen Stripe-konto nødvendig
+
+Når du har en Stripe-konto, kan vi aktivere Stripe-integrationen og koble det hele sammen.
 
