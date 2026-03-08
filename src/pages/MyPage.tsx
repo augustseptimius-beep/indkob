@@ -193,151 +193,180 @@ export default function MyPage() {
               </Card>
             )}
 
-            <h2 className="font-serif text-xl font-semibold">Mine reservationer</h2>
-
             {isLoading ? (
               <div className="space-y-4">{[1,2,3].map(i => <Skeleton key={i} className="h-24" />)}</div>
             ) : reservations?.length === 0 ? (
               <Card><CardContent className="py-12 text-center text-muted-foreground"><Package className="w-12 h-12 mx-auto mb-4 opacity-30" /><p>Du har ingen reservationer endnu</p></CardContent></Card>
             ) : (
-              <div className="space-y-4">
-                {reservations?.map((reservation) => {
-                  const isEditing = editingId === reservation.id;
-                  const canModify = reservation.product?.status === 'open' && !reservation.paid;
-                  const minPurchase = reservation.product?.minimum_purchase || 1;
+              <>
+                {/* Group reservations by status */}
+                {(() => {
+                  const statusOrder = ['ready', 'ordered', 'pending', 'completed'];
+                  const statusLabels: Record<string, string> = {
+                    ready: '🎉 Klar til afhentning',
+                    ordered: '📦 Bestilt hjem',
+                    pending: '⏳ Afventer flere købere',
+                    completed: '✅ Afhentet',
+                  };
+                  
+                  const grouped = reservations?.reduce((acc, r) => {
+                    const status = r.status || 'pending';
+                    if (!acc[status]) acc[status] = [];
+                    acc[status].push(r);
+                    return acc;
+                  }, {} as Record<string, typeof reservations>);
 
-                  return (
-                    <Card key={reservation.id}>
-                      <CardContent className="py-4">
-                        <div className="flex items-start gap-4">
-                          {/* Image */}
-                          <Link to={`/produkt/${reservation.product_id}`} className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
-                            {reservation.product?.image_url ? (
-                              <img src={reservation.product.image_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center"><Package className="w-6 h-6 text-muted-foreground/30" /></div>
-                            )}
-                          </Link>
+                  return statusOrder.map(status => {
+                    const items = grouped?.[status];
+                    if (!items || items.length === 0) return null;
 
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <Link to={`/produkt/${reservation.product_id}`} className="hover:text-primary transition-colors">
-                              <h3 className="font-semibold truncate">{reservation.product?.title}</h3>
-                            </Link>
+                    return (
+                      <div key={status} className="space-y-3">
+                        <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                          {statusLabels[status] || status}
+                        </h3>
+                        <div className="space-y-3">
+                          {items.map((reservation) => {
+                            const isEditing = editingId === reservation.id;
+                            const canModify = reservation.product?.status === 'open' && !reservation.paid;
+                            const minPurchase = reservation.product?.minimum_purchase || 1;
 
-                            {isEditing ? (
-                              <div className="flex items-center gap-2 mt-2">
-                                <div className="flex items-center border rounded-lg">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => setEditQuantity(Math.max(minPurchase, editQuantity - 1))}
-                                  >
-                                    <Minus className="w-3 h-3" />
-                                  </Button>
-                                  <span className="w-10 text-center text-sm font-medium">{editQuantity}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => setEditQuantity(editQuantity + 1)}
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                                <span className="text-sm text-muted-foreground">{reservation.product?.unit_name}</span>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
-                                  onClick={() => saveQuantity(reservation.id)}
-                                  disabled={updateReservation.isPending}
-                                >
-                                  <Save className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-8 w-8 p-0"
-                                  onClick={cancelEditing}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <p className="text-sm text-muted-foreground mt-0.5">
-                                {reservation.quantity} {reservation.product?.unit_name} × {reservation.product?.price_per_unit.toFixed(2)} kr
-                              </p>
-                            )}
+                            return (
+                              <Card key={reservation.id} className={status === 'completed' ? 'opacity-60' : ''}>
+                                <CardContent className="py-4">
+                                  <div className="flex items-start gap-4">
+                                    {/* Image */}
+                                    <Link to={`/produkt/${reservation.product_id}`} className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
+                                      {reservation.product?.image_url ? (
+                                        <img src={reservation.product.image_url} alt="" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center"><Package className="w-6 h-6 text-muted-foreground/30" /></div>
+                                      )}
+                                    </Link>
 
-                            {reservation.paid && (
-                              <div className="flex items-center gap-1 text-green-600 text-sm mt-1">
-                                <CheckCircle className="h-3 w-3" />
-                                <span>Betalt</span>
-                              </div>
-                            )}
-                          </div>
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                      <Link to={`/produkt/${reservation.product_id}`} className="hover:text-primary transition-colors">
+                                        <h3 className="font-semibold truncate">{reservation.product?.title}</h3>
+                                      </Link>
 
-                          {/* Price & Status */}
-                          {!isEditing && (
-                            <div className="text-right flex flex-col items-end gap-2 shrink-0">
-                              <p className="font-semibold">
-                                {((reservation.product?.price_per_unit || 0) * reservation.quantity).toFixed(2)} kr
-                              </p>
-                              <Badge variant="secondary">{getStatusLabel(reservation.status, reservation.product)}</Badge>
-                              {canModify && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 text-xs"
-                                    onClick={() => startEditing(reservation.id, reservation.quantity)}
-                                  >
-                                    <Pencil className="w-3 h-3 mr-1" />
-                                    Ændr
-                                  </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                                      >
-                                        <Trash2 className="w-3 h-3 mr-1" />
-                                        Annuller
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Annuller reservation?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Er du sikker på, at du vil annullere din reservation af{' '}
-                                          <strong>{reservation.quantity} {reservation.product?.unit_name} {reservation.product?.title}</strong>?
-                                          Denne handling kan ikke fortrydes.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Behold</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDelete(reservation.id)}
-                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        >
-                                          Ja, annuller
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                      {isEditing ? (
+                                        <div className="flex items-center gap-2 mt-2">
+                                          <div className="flex items-center border rounded-lg">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setEditQuantity(Math.max(minPurchase, editQuantity - 1))}
+                                            >
+                                              <Minus className="w-3 h-3" />
+                                            </Button>
+                                            <span className="w-10 text-center text-sm font-medium">{editQuantity}</span>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className="h-8 w-8"
+                                              onClick={() => setEditQuantity(editQuantity + 1)}
+                                            >
+                                              <Plus className="w-3 h-3" />
+                                            </Button>
+                                          </div>
+                                          <span className="text-sm text-muted-foreground">{reservation.product?.unit_name}</span>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
+                                            onClick={() => saveQuantity(reservation.id)}
+                                            disabled={updateReservation.isPending}
+                                          >
+                                            <Save className="w-4 h-4" />
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0"
+                                            onClick={cancelEditing}
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground mt-0.5">
+                                          {reservation.quantity} {reservation.product?.unit_name} × {reservation.product?.price_per_unit.toFixed(2)} kr
+                                        </p>
+                                      )}
+
+                                      {reservation.paid && (
+                                        <div className="flex items-center gap-1 text-green-600 text-sm mt-1">
+                                          <CheckCircle className="h-3 w-3" />
+                                          <span>Betalt</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Price & Actions */}
+                                    {!isEditing && (
+                                      <div className="text-right flex flex-col items-end gap-2 shrink-0">
+                                        <p className="font-semibold">
+                                          {((reservation.product?.price_per_unit || 0) * reservation.quantity).toFixed(2)} kr
+                                        </p>
+                                        {canModify && (
+                                          <div className="flex items-center gap-1 mt-1">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-7 px-2 text-xs"
+                                              onClick={() => startEditing(reservation.id, reservation.quantity)}
+                                            >
+                                              <Pencil className="w-3 h-3 mr-1" />
+                                              Ændr
+                                            </Button>
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                                                >
+                                                  <Trash2 className="w-3 h-3 mr-1" />
+                                                  Annuller
+                                                </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                  <AlertDialogTitle>Annuller reservation?</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                    Er du sikker på, at du vil annullere din reservation af{' '}
+                                                    <strong>{reservation.quantity} {reservation.product?.unit_name} {reservation.product?.title}</strong>?
+                                                    Denne handling kan ikke fortrydes.
+                                                  </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                  <AlertDialogCancel>Behold</AlertDialogCancel>
+                                                  <AlertDialogAction
+                                                    onClick={() => handleDelete(reservation.id)}
+                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                  >
+                                                    Ja, annuller
+                                                  </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </>
             )}
           </TabsContent>
 
