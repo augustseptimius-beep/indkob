@@ -521,6 +521,23 @@ export function ProductFormDialog({
 
             <FormField
               control={form.control}
+              name="notify_threshold"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notifikationstærskel</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Send email når der mangler dette antal reservationer (0 = ingen notifikation)
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="is_organic"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
