@@ -29,8 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import type { Product, Category, ProductTag } from '@/lib/supabase-types';
-import { Upload, Loader2, X } from 'lucide-react';
+import { Upload, Loader2, X, ChevronDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const productSchema = z.object({
@@ -85,6 +90,8 @@ export function ProductFormDialog({
 }: ProductFormDialogProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [supplierOpen, setSupplierOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createProduct = useCreateProduct();
@@ -115,6 +122,8 @@ export function ProductFormDialog({
   useEffect(() => {
     if (product) {
       setPreviewUrl(product.image_url || null);
+      setSupplierOpen(!!product.supplier_name || !!product.origin_country || !!product.supplier_url);
+      setSettingsOpen(false);
       form.reset({
         title: product.title,
         description: product.description || '',
@@ -135,6 +144,8 @@ export function ProductFormDialog({
       });
     } else if (importedData) {
       setPreviewUrl(importedData.image_url || null);
+      setSupplierOpen(!!importedData.supplier_name || !!importedData.origin_country);
+      setSettingsOpen(false);
       form.reset({
         title: importedData.title || '',
         description: importedData.description || '',
@@ -155,6 +166,8 @@ export function ProductFormDialog({
       });
     } else {
       setPreviewUrl(null);
+      setSupplierOpen(false);
+      setSettingsOpen(false);
       form.reset({
         title: '',
         description: '',
@@ -238,6 +251,25 @@ export function ProductFormDialog({
     onOpenChange(false);
   };
 
+  const SectionHeader = ({ 
+    open: isOpen, 
+    onToggle, 
+    title 
+  }: { 
+    open: boolean; 
+    onToggle: () => void; 
+    title: string; 
+  }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex items-center justify-between w-full py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {title}
+      <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+    </button>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -254,6 +286,7 @@ export function ProductFormDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* === Grundlæggende === */}
             <FormField
               control={form.control}
               name="title"
@@ -281,94 +314,6 @@ export function ProductFormDialog({
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="price_per_unit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fælleskøb pris (kr.) *</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="comparison_price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Normalpris (kr.)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" placeholder="Normalpris" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="comparison_source"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sammenlignet med</FormLabel>
-                    <FormControl>
-                      <Input placeholder="F.eks. Rema1000, Netto..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="unit_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Enhed *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="stk, kg, pose..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="target_quantity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mål-mængde *</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="minimum_purchase"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Minimum køb *</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             <FormField
               control={form.control}
@@ -452,112 +397,224 @@ export function ProductFormDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="supplier_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Leverandør</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Leverandørnavn" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* === Pris & mængde === */}
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Pris & mængde</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="price_per_unit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fælleskøb pris (kr.) *</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="origin_country"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Oprindelsesland</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Danmark" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="comparison_price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Normalpris (kr.)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="Normalpris" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="comparison_source"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sammenlignet med</FormLabel>
+                      <FormControl>
+                        <Input placeholder="F.eks. Rema1000, Netto..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="unit_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enhed *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="stk, kg, pose..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <FormField
+                  control={form.control}
+                  name="target_quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mål-mængde *</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="minimum_purchase"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Minimum køb *</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <FormField
-              control={form.control}
-              name="supplier_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Leverandør link</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="open">Åben</SelectItem>
-                      <SelectItem value="ordered">Bestilt</SelectItem>
-                      <SelectItem value="arrived">Ankommet</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notify_threshold"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notifikationstærskel</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="0" {...field} />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    Send email når der mangler dette antal reservationer (0 = ingen notifikation)
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="is_organic"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+            {/* === Leverandør (collapsible) === */}
+            <div className="border-t pt-2">
+              <Collapsible open={supplierOpen} onOpenChange={setSupplierOpen}>
+                <CollapsibleTrigger asChild>
+                  <SectionHeader open={supplierOpen} onToggle={() => setSupplierOpen(!supplierOpen)} title="Leverandør" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="supplier_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Leverandør</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Leverandørnavn" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="cursor-pointer">
-                      Økologisk produkt
-                    </FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Marker hvis produktet er økologisk certificeret
-                    </p>
+
+                    <FormField
+                      control={form.control}
+                      name="origin_country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Oprindelsesland</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Danmark" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                </FormItem>
-              )}
-            />
+
+                  <FormField
+                    control={form.control}
+                    name="supplier_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Leverandør link</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+
+            {/* === Indstillinger (collapsible) === */}
+            <div className="border-t pt-2">
+              <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <CollapsibleTrigger asChild>
+                  <SectionHeader open={settingsOpen} onToggle={() => setSettingsOpen(!settingsOpen)} title="Indstillinger" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-4 pt-2">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="open">Åben</SelectItem>
+                            <SelectItem value="ordered">Bestilt</SelectItem>
+                            <SelectItem value="arrived">Ankommet</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="notify_threshold"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notifikationstærskel</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Send email når der mangler dette antal reservationer (0 = ingen notifikation)
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="is_organic"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="cursor-pointer">
+                            Økologisk produkt
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Marker hvis produktet er økologisk certificeret
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
 
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

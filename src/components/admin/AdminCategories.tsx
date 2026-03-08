@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useProducts';
+import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useProducts } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -15,9 +16,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useMemo } from 'react';
 
 export function AdminCategories() {
   const { data: categories, isLoading } = useCategories();
+  const { data: products } = useProducts();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
@@ -26,6 +29,17 @@ export function AdminCategories() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Count products per category
+  const productCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    products?.forEach(p => {
+      if (p.category_id) {
+        map[p.category_id] = (map[p.category_id] || 0) + 1;
+      }
+    });
+    return map;
+  }, [products]);
 
   const handleCreate = async () => {
     const trimmed = newName.trim();
@@ -71,7 +85,6 @@ export function AdminCategories() {
         <h2 className="text-xl font-semibold">Kategorier ({categories?.length || 0})</h2>
       </div>
 
-      {/* Add new category */}
       <div className="flex gap-2">
         <Input
           placeholder="Ny kategori..."
@@ -85,41 +98,46 @@ export function AdminCategories() {
         </Button>
       </div>
 
-      {/* Category list */}
       <div className="grid gap-3">
-        {categories?.map((cat) => (
-          <Card key={cat.id}>
-            <CardContent className="p-4 flex items-center gap-3">
-              {editingId === cat.id ? (
-                <>
-                  <Input
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
-                    className="flex-1"
-                    autoFocus
-                  />
-                  <Button variant="outline" size="icon" onClick={handleUpdate} disabled={updateCategory.isPending}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => setEditingId(null)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <span className="flex-1 font-medium">{cat.name}</span>
-                  <Button variant="outline" size="icon" onClick={() => { setEditingId(cat.id); setEditingName(cat.name); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => setDeletingId(cat.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+        {categories?.map((cat) => {
+          const count = productCountMap[cat.id] || 0;
+          return (
+            <Card key={cat.id} className={count === 0 ? 'opacity-60' : ''}>
+              <CardContent className="p-4 flex items-center gap-3">
+                {editingId === cat.id ? (
+                  <>
+                    <Input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
+                      className="flex-1"
+                      autoFocus
+                    />
+                    <Button variant="outline" size="icon" onClick={handleUpdate} disabled={updateCategory.isPending}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => setEditingId(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 font-medium">{cat.name}</span>
+                    <Badge variant={count > 0 ? 'secondary' : 'outline'} className="text-xs">
+                      {count} produkt{count !== 1 ? 'er' : ''}
+                    </Badge>
+                    <Button variant="outline" size="icon" onClick={() => { setEditingId(cat.id); setEditingName(cat.name); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => setDeletingId(cat.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
 
         {categories?.length === 0 && (
           <Card>
@@ -135,7 +153,9 @@ export function AdminCategories() {
           <AlertDialogHeader>
             <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hvis kategorien er knyttet til produkter, kan sletning fejle. Fjern kategorien fra produkterne først.
+              {deletingId && productCountMap[deletingId] > 0
+                ? `Denne kategori har ${productCountMap[deletingId]} tilknyttede produkter. Fjern kategorien fra produkterne først.`
+                : 'Hvis kategorien er knyttet til produkter, kan sletning fejle. Fjern kategorien fra produkterne først.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

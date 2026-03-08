@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen, ScrollText } from 'lucide-react';
@@ -11,8 +13,8 @@ import { AdminUsers } from '@/components/admin/AdminUsers';
 import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
 import { AdminCategories } from '@/components/admin/AdminCategories';
 import { AdminEmailLog } from '@/components/admin/AdminEmailLog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export default function AdminPage() {
@@ -20,16 +22,40 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('products');
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Fetch counts for notification badges
+  const { data: unpaidCount } = useQuery({
+    queryKey: ['admin-unpaid-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('reservations')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['ordered', 'ready'])
+        .eq('paid', false);
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: failedEmailCount } = useQuery({
+    queryKey: ['admin-failed-email-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('email_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'failed');
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   const handleSyncSigningKey = async () => {
     setIsSyncing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        toast({
-          title: 'Fejl',
-          description: 'Du skal være logget ind for at synkronisere',
-          variant: 'destructive',
-        });
+        toast({ title: 'Fejl', description: 'Du skal være logget ind for at synkronisere', variant: 'destructive' });
         return;
       }
 
@@ -47,24 +73,13 @@ export default function AdminPage() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        toast({
-          title: 'Succes!',
-          description: result.message || 'Signeringsnøgle synkroniseret til vault',
-        });
+        toast({ title: 'Succes!', description: result.message || 'Signeringsnøgle synkroniseret til vault' });
       } else {
-        toast({
-          title: 'Fejl',
-          description: result.error || 'Kunne ikke synkronisere nøgle',
-          variant: 'destructive',
-        });
+        toast({ title: 'Fejl', description: result.error || 'Kunne ikke synkronisere nøgle', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Sync error:', error);
-      toast({
-        title: 'Fejl',
-        description: 'Der opstod en netværksfejl',
-        variant: 'destructive',
-      });
+      toast({ title: 'Fejl', description: 'Der opstod en netværksfejl', variant: 'destructive' });
     } finally {
       setIsSyncing(false);
     }
@@ -83,6 +98,21 @@ export default function AdminPage() {
   if (!user || !isAdmin) {
     return <Navigate to="/" replace />;
   }
+
+  const TabBadge = ({ count, variant = 'default' }: { count: number; variant?: 'default' | 'destructive' }) => {
+    if (!count) return null;
+    return (
+      <Badge
+        className={`ml-1 h-5 min-w-5 px-1 text-[10px] leading-none ${
+          variant === 'destructive' 
+            ? 'bg-destructive text-destructive-foreground' 
+            : 'bg-primary text-primary-foreground'
+        }`}
+      >
+        {count}
+      </Badge>
+    );
+  };
 
   return (
     <Layout>
@@ -129,6 +159,7 @@ export default function AdminPage() {
               <TabsTrigger value="orders" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ClipboardList className="h-4 w-4" />
                 <span className="hidden sm:inline">Ordrer</span>
+                <TabBadge count={unpaidCount || 0} variant="destructive" />
               </TabsTrigger>
               <TabsTrigger value="cms" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <FileText className="h-4 w-4" />
@@ -145,6 +176,7 @@ export default function AdminPage() {
               <TabsTrigger value="email-log" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ScrollText className="h-4 w-4" />
                 <span className="hidden sm:inline">Log</span>
+                <TabBadge count={failedEmailCount || 0} variant="destructive" />
               </TabsTrigger>
             </TabsList>
           </div>

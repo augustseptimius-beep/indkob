@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useProducts, useCategories, useProductTags, useDeleteProduct } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Pencil, Trash2, Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react';
 import { ProductFormDialog } from './ProductFormDialog';
 import { ProductImportDialog } from './ProductImportDialog';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +42,27 @@ export function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [importedData, setImportedData] = useState<{ data: ImportedProductData; sourceUrl: string } | null>(null);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    return products.filter((p) => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!p.title.toLowerCase().includes(q)) return false;
+      }
+      if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+      if (categoryFilter !== 'all') {
+        if (categoryFilter === 'none' && p.category_id) return false;
+        if (categoryFilter !== 'none' && p.category_id !== categoryFilter) return false;
+      }
+      return true;
+    });
+  }, [products, searchQuery, statusFilter, categoryFilter]);
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -89,7 +112,9 @@ export function AdminProducts() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h2 className="text-xl font-semibold">Produkter ({products?.length || 0})</h2>
+        <h2 className="text-xl font-semibold">
+          Produkter ({filteredProducts.length}{filteredProducts.length !== (products?.length || 0) ? ` af ${products?.length}` : ''})
+        </h2>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
@@ -103,8 +128,44 @@ export function AdminProducts() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Søg på produktnavn..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <SelectValue placeholder="Alle statusser" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle statusser</SelectItem>
+            <SelectItem value="open">Åben</SelectItem>
+            <SelectItem value="ordered">Bestilt</SelectItem>
+            <SelectItem value="arrived">Ankommet</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Alle kategorier" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle kategorier</SelectItem>
+            <SelectItem value="none">Uden kategori</SelectItem>
+            {categories?.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-4">
-        {products?.map((product) => (
+        {filteredProducts.map((product) => (
           <Card key={product.id}>
             <CardContent className="p-4">
               <div className="flex items-start gap-3 sm:gap-4">
@@ -153,10 +214,12 @@ export function AdminProducts() {
           </Card>
         ))}
 
-        {products?.length === 0 && (
+        {filteredProducts.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-              Ingen produkter endnu. Klik "Tilføj produkt" for at oprette det første.
+              {products?.length === 0
+                ? 'Ingen produkter endnu. Klik "Tilføj produkt" for at oprette det første.'
+                : 'Ingen produkter matcher dine filtre.'}
             </CardContent>
           </Card>
         )}
