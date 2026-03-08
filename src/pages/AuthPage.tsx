@@ -172,16 +172,29 @@ export default function AuthPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {!isLogin && (
                   <>
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Fulde navn</Label>
-                      <Input
-                        id="fullName"
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Dit navn"
-                        required={!isLogin}
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">Fornavn</Label>
+                        <Input
+                          id="firstName"
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="Fornavn"
+                          required={!isLogin}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Efternavn</Label>
+                        <Input
+                          id="lastName"
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Efternavn"
+                          required={!isLogin}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Telefonnummer</Label>

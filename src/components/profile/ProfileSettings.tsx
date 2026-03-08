@@ -10,23 +10,25 @@ import { User, Save, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 
 const profileSchema = z.object({
-  fullName: z.string().min(2, 'Navn skal være mindst 2 tegn').max(100, 'Navn må maks være 100 tegn'),
+  firstName: z.string().min(1, 'Fornavn er påkrævet').max(50, 'Fornavn må maks være 50 tegn'),
+  lastName: z.string().min(1, 'Efternavn er påkrævet').max(50, 'Efternavn må maks være 50 tegn'),
 });
 
 interface ProfileSettingsProps {
-  profile: { full_name: string | null } | null;
+  profile: { first_name: string | null; last_name: string | null; full_name: string | null } | null;
   onUpdate: () => void;
 }
 
 export function ProfileSettings({ profile, onUpdate }: ProfileSettingsProps) {
   const { user } = useAuth();
-  const [fullName, setFullName] = useState(profile?.full_name || '');
+  const [firstName, setFirstName] = useState(profile?.first_name || '');
+  const [lastName, setLastName] = useState(profile?.last_name || '');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validation = profileSchema.safeParse({ fullName });
+    const validation = profileSchema.safeParse({ firstName, lastName });
     if (!validation.success) {
       toast.error(validation.error.errors[0].message);
       return;
@@ -38,7 +40,11 @@ export function ProfileSettings({ profile, onUpdate }: ProfileSettingsProps) {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: fullName, updated_at: new Date().toISOString() })
+        .update({ 
+          first_name: firstName, 
+          last_name: lastName, 
+          updated_at: new Date().toISOString() 
+        })
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -73,14 +79,25 @@ export function ProfileSettings({ profile, onUpdate }: ProfileSettingsProps) {
             />
             <p className="text-xs text-muted-foreground">Email kan ikke ændres</p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Fulde navn</Label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Dit fulde navn"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Fornavn</Label>
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Fornavn"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Efternavn</Label>
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Efternavn"
+              />
+            </div>
           </div>
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
