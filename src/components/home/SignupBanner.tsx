@@ -24,6 +24,9 @@ export function SignupBanner() {
                   Opret en gratis konto og få adgang til at reservere varer, 
                   følge med i dine ordrer og blive en del af Klitmøllers Indkøbsfællesskab.
                 </p>
+                <p className="text-xs text-muted-foreground/70 mt-2">
+                  Gratis i beta-perioden. Efter beta koster medlemskab 10 kr/md. som dækker platformens drift.
+                </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button asChild size="lg" className="gap-2">

@@ -131,7 +131,7 @@ export function Header() {
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
             {user && reservationCount > 0 &&
-              <Link to="/min-side" className="relative p-2">
+              <Link to="/min-side" className="relative p-2 group" title={hasPendingPayment ? `${unpaidActive.length} afventer betaling` : hasAwaitingPickup ? `${awaitingPickup.length} klar til afhentning` : `${reservationCount} aktive reservationer`}>
                 <ShoppingBag className="h-5 w-5" />
                 <Badge
                   variant={hasPendingPayment ? "destructive" : "default"}
@@ -139,6 +139,7 @@ export function Header() {
                   hasPendingPayment ? 'animate-pulse' : ''}`
                   }>
                   
+                  {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-0.5" />}
                   {reservationCount}
                 </Badge>
               </Link>
