@@ -49,6 +49,7 @@ const productSchema = z.object({
   supplier_name: z.string().optional(),
   status: z.enum(['open', 'ordered', 'arrived']),
   is_organic: z.boolean(),
+  notify_threshold: z.coerce.number().int().min(0, 'Skal være 0 eller højere'),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -107,6 +108,7 @@ export function ProductFormDialog({
       supplier_name: '',
       status: 'open',
       is_organic: false,
+      notify_threshold: 2,
     },
   });
 
@@ -129,6 +131,7 @@ export function ProductFormDialog({
         supplier_name: product.supplier_name || '',
         status: product.status,
         is_organic: product.is_organic || false,
+        notify_threshold: product.notify_threshold ?? 2,
       });
     } else if (importedData) {
       setPreviewUrl(importedData.image_url || null);
@@ -148,6 +151,7 @@ export function ProductFormDialog({
         supplier_name: importedData.supplier_name || '',
         status: 'open',
         is_organic: importedData.is_organic || false,
+        notify_threshold: 2,
       });
     } else {
       setPreviewUrl(null);
@@ -167,6 +171,7 @@ export function ProductFormDialog({
         supplier_name: '',
         status: 'open',
         is_organic: false,
+        notify_threshold: 2,
       });
     }
   }, [product, importedData, importedSourceUrl, form]);
@@ -509,6 +514,23 @@ export function ProductFormDialog({
                       <SelectItem value="arrived">Ankommet</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notify_threshold"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notifikationstærskel</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Send email når der mangler dette antal reservationer (0 = ingen notifikation)
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
