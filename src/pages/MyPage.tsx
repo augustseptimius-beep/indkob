@@ -334,7 +334,11 @@ export default function MyPage() {
                           )}
                         </div>
                       </CardContent>
-                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
             <ProfileSettings profile={profile} onUpdate={handleProfileUpdate} />
