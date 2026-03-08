@@ -6,18 +6,23 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useProduct } from '@/hooks/useProducts';
 import { useCreateReservation } from '@/hooks/useReservations';
+import { useReservationCount } from '@/hooks/useReservationCount';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, ExternalLink, MapPin, Package, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, ExternalLink, MapPin, Package, Minus, Plus, Users, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganicBadge } from '@/components/OrganicBadge';
+import { ReservationConfirmDialog } from '@/components/products/ReservationConfirmDialog';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: product, isLoading } = useProduct(id!);
+  const { data: reserverCount } = useReservationCount(id!);
   const { user } = useAuth();
   const createReservation = useCreateReservation();
   const [quantity, setQuantity] = useState(1);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [lastReservation, setLastReservation] = useState<{ quantity: number; newCurrent: number } | null>(null);
 
   const handleReserve = async () => {
     if (!user) {
@@ -26,7 +31,8 @@ export default function ProductDetailPage() {
     }
     try {
       await createReservation.mutateAsync({ productId: id!, quantity });
-      toast.success(`Du har reserveret ${quantity} ${product?.unit_name}!`);
+      setLastReservation({ quantity, newCurrent: (product?.current_quantity || 0) + quantity });
+      setConfirmOpen(true);
       setQuantity(1);
     } catch (error: any) {
       toast.error(error.message || 'Kunne ikke reservere');
@@ -67,6 +73,7 @@ export default function ProductDetailPage() {
   const progress = (product.current_quantity / product.target_quantity) * 100;
   const remaining = product.target_quantity - product.current_quantity;
   const isComplete = remaining <= 0;
+  const isAlmostComplete = !isComplete && remaining <= product.notify_threshold * product.minimum_purchase;
 
   return (
     <Layout>
@@ -151,7 +158,7 @@ export default function ProductDetailPage() {
             {product.supplier_url && (
               <p className="text-sm text-muted-foreground mb-6">
                 Læs mere om produktet hos leverandøren:{' '}
-                <a href={product.supplier_url} target="_blank" rel="noopener noreferrer" className="inline-inline-flex items-center gap-1 text-primary hover:underline">
+                <a href={product.supplier_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
                   {product.supplier_name || 'Se her'} <ExternalLink className="w-3 h-3 inline" />
                 </a>
               </p>
@@ -166,9 +173,29 @@ export default function ProductDetailPage() {
               <div className="progress-bar h-3 mb-2">
                 <div className={isComplete ? 'progress-fill-complete' : 'progress-fill'} style={{ width: `${Math.min(progress, 100)}%` }} />
               </div>
-              <p className="text-sm text-muted-foreground">
-                {isComplete ? 'Målet er nået!' : `Mangler ${remaining} ${product.unit_name}`}
-              </p>
+              
+              {/* Social proof */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {isComplete ? 'Målet er nået!' : `Mangler ${remaining} ${product.unit_name}`}
+                </p>
+                {reserverCount !== undefined && reserverCount > 0 && (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>{reserverCount} {reserverCount === 1 ? 'medlem har' : 'medlemmer har'} reserveret</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Urgency message */}
+              {isAlmostComplete && (
+                <div className="mt-3 flex items-center gap-2 text-sm font-medium text-warning-foreground bg-warning/10 rounded-lg px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>
+                    Kun {remaining} {product.unit_name} fra mål — snart klar til bestilling!
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Reservation */}
@@ -200,7 +227,7 @@ export default function ProductDetailPage() {
 
             {!user && product.status === 'open' && !isComplete && (
               <Button asChild size="lg" className="w-full">
-                <Link to="/auth">Log ind for at reservere</Link>
+                <Link to="/auth?mode=signup">Opret konto for at reservere</Link>
               </Button>
             )}
 
@@ -210,6 +237,20 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation dialog */}
+      {lastReservation && product && (
+        <ReservationConfirmDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          productTitle={product.title}
+          quantity={lastReservation.quantity}
+          unitName={product.unit_name}
+          pricePerUnit={product.price_per_unit}
+          currentQuantity={lastReservation.newCurrent}
+          targetQuantity={product.target_quantity}
+        />
+      )}
     </Layout>
   );
 }

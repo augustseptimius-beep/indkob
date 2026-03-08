@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { Product } from '@/lib/supabase-types';
-import { MapPin, Package } from 'lucide-react';
+import { MapPin, Package, ArrowRight } from 'lucide-react';
 import { OrganicBadge } from '@/components/OrganicBadge';
 
 interface ProductCardProps {
@@ -43,9 +44,17 @@ export function ProductCard({ product }: ProductCardProps) {
     }
   };
 
+  const getCTALabel = () => {
+    if (product.status === 'open' && !isComplete) return 'Reserver din andel';
+    if (isTargetReached) return 'Se detaljer';
+    if (product.status === 'ordered') return 'Se status';
+    if (product.status === 'arrived') return 'Se afhentning';
+    return 'Se mere';
+  };
+
   return (
     <Link to={`/produkt/${product.id}`}>
-      <Card className="card-hover overflow-hidden group h-full">
+      <Card className="card-hover overflow-hidden group h-full flex flex-col">
         {/* Image */}
         <div className="aspect-square relative overflow-hidden bg-white">
           {product.image_url ? (
@@ -69,7 +78,7 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        <CardContent className="p-4">
+        <CardContent className="p-4 flex flex-col flex-1">
           {/* Category */}
           {product.category && (
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
@@ -129,7 +138,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {!product.comparison_price && <div className="mb-4" />}
 
           {/* Progress Bar */}
-          <div className="space-y-2">
+          <div className="space-y-2 mt-auto">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tilmeldt</span>
               <span className="font-medium">
@@ -142,6 +151,17 @@ export function ProductCard({ product }: ProductCardProps) {
                 style={{ width: `${Math.min(progress, 100)}%` }}
               />
             </div>
+
+            {/* CTA Button */}
+            <Button
+              variant={product.status === 'open' && !isComplete ? 'default' : 'outline'}
+              size="sm"
+              className="w-full mt-2 gap-1.5"
+              tabIndex={-1}
+            >
+              {getCTALabel()}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </CardContent>
       </Card>

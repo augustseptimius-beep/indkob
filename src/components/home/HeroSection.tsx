@@ -62,7 +62,7 @@ export function HeroSection() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link to="/auth">Bliv medlem</Link>
+              <Link to="/auth?mode=signup">Bliv medlem — det er gratis</Link>
             </Button>
           </div>
         </div>
