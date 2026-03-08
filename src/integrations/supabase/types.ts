@@ -137,6 +137,53 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          reservation_id: string | null
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          reservation_id?: string | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          reservation_id?: string | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_tag_relations: {
         Row: {
           product_id: string
@@ -341,6 +388,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stripe_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
