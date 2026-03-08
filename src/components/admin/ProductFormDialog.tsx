@@ -171,6 +171,7 @@ export function ProductFormDialog({
         supplier_name: '',
         status: 'open',
         is_organic: false,
+        notify_threshold: 2,
       });
     }
   }, [product, importedData, importedSourceUrl, form]);
