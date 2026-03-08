@@ -197,6 +197,7 @@ export type Database = {
           image_url: string | null
           is_organic: boolean
           minimum_purchase: number
+          notify_threshold: number
           origin_country: string | null
           price_per_unit: number
           status: string
@@ -218,6 +219,7 @@ export type Database = {
           image_url?: string | null
           is_organic?: boolean
           minimum_purchase?: number
+          notify_threshold?: number
           origin_country?: string | null
           price_per_unit: number
           status?: string
@@ -239,6 +241,7 @@ export type Database = {
           image_url?: string | null
           is_organic?: boolean
           minimum_purchase?: number
+          notify_threshold?: number
           origin_country?: string | null
           price_per_unit?: number
           status?: string
