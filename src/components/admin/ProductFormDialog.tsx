@@ -151,6 +151,7 @@ export function ProductFormDialog({
         supplier_name: importedData.supplier_name || '',
         status: 'open',
         is_organic: importedData.is_organic || false,
+        notify_threshold: 2,
       });
     } else {
       setPreviewUrl(null);
