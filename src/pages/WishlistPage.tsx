@@ -167,8 +167,9 @@ export default function WishlistPage() {
     }
   };
 
-  // Sort by votes descending
-  const sorted = [...(items ?? [])].sort((a, b) => b.vote_count - a.vote_count);
+  // Split into active and added, sort each by votes
+  const active = [...(items ?? [])].filter(i => !i.is_added).sort((a, b) => b.vote_count - a.vote_count);
+  const added = [...(items ?? [])].filter(i => i.is_added).sort((a, b) => b.vote_count - a.vote_count);
 
   return (
     <Layout>
@@ -228,10 +229,21 @@ export default function WishlistPage() {
 
             {isLoading ? (
               <p className="text-center text-muted-foreground py-8">Indlæser...</p>
-            ) : sorted.length === 0 ? (
+            ) : active.length === 0 && added.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Ingen ønsker endnu — vær den første!</p>
             ) : (
-              sorted.map((item) => <WishlistItemCard key={item.id} item={item} isAdmin={!!isAdmin} />)
+              <>
+                {active.map((item) => <WishlistItemCard key={item.id} item={item} isAdmin={!!isAdmin} />)}
+
+                {added.length > 0 && (
+                  <div className="space-y-3 pt-4">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                      ✅ Tilføjet til sortimentet
+                    </h3>
+                    {added.map((item) => <WishlistItemCard key={item.id} item={item} isAdmin={!!isAdmin} />)}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
