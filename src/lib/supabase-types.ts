@@ -21,6 +21,7 @@ export interface Product {
   is_organic: boolean;
   comparison_price: number | null;
   comparison_source: string | null;
+  notify_threshold: number;
   created_at: string;
   updated_at: string;
   category?: Category | null;

@@ -49,6 +49,7 @@ const productSchema = z.object({
   supplier_name: z.string().optional(),
   status: z.enum(['open', 'ordered', 'arrived']),
   is_organic: z.boolean(),
+  notify_threshold: z.coerce.number().int().min(0, 'Skal være 0 eller højere'),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
