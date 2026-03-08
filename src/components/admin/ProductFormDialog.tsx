@@ -131,6 +131,7 @@ export function ProductFormDialog({
         supplier_name: product.supplier_name || '',
         status: product.status,
         is_organic: product.is_organic || false,
+        notify_threshold: product.notify_threshold ?? 2,
       });
     } else if (importedData) {
       setPreviewUrl(importedData.image_url || null);
