@@ -86,6 +86,12 @@ const paymentConfirmedSchema = z.object({
   quantity: z.number()
 });
 
+const batchReservationSchema = z.object({
+  type: z.literal("batch_reservation_confirmed"),
+  batchId: z.string().uuid("Invalid batch ID format"),
+  userId: z.string().uuid("Invalid user ID format"),
+});
+
 // HMAC signature verification
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   try {
