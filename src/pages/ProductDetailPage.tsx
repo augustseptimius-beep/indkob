@@ -5,38 +5,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useProduct } from '@/hooks/useProducts';
-import { useCreateReservation } from '@/hooks/useReservations';
 import { useReservationCount } from '@/hooks/useReservationCount';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
-import { ArrowLeft, ExternalLink, MapPin, Package, Minus, Plus, Users, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, MapPin, Package, Minus, Plus, Users, AlertTriangle, ShoppingBag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganicBadge } from '@/components/OrganicBadge';
-import { ReservationConfirmDialog } from '@/components/products/ReservationConfirmDialog';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: product, isLoading } = useProduct(id!);
   const { data: reserverCount } = useReservationCount(id!);
   const { user } = useAuth();
-  const createReservation = useCreateReservation();
+  const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [lastReservation, setLastReservation] = useState<{ quantity: number; newCurrent: number } | null>(null);
 
-  const handleReserve = async () => {
-    if (!user) {
-      toast.error('Du skal være logget ind for at reservere');
-      return;
-    }
-    try {
-      await createReservation.mutateAsync({ productId: id!, quantity });
-      setLastReservation({ quantity, newCurrent: (product?.current_quantity || 0) + quantity });
-      setConfirmOpen(true);
-      setQuantity(1);
-    } catch (error: any) {
-      toast.error(error.message || 'Kunne ikke reservere');
-    }
+  const handleAddToCart = () => {
+    if (!product) return;
+    addItem(product, quantity);
+    toast.success(`${product.title} tilføjet til kurven`);
+    setQuantity(1);
   };
 
   if (isLoading) {
@@ -198,8 +187,8 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Reservation */}
-            {product.status === 'open' && !isComplete && user && (
+            {/* Add to Cart */}
+            {product.status === 'open' && !isComplete && (
               <div className="flex items-center gap-4">
                 <div className="flex items-center border rounded-lg">
                   <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(product.minimum_purchase, quantity - 1))}>
@@ -210,8 +199,9 @@ export default function ProductDetailPage() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
-                <Button onClick={handleReserve} disabled={createReservation.isPending} size="lg" className="flex-1">
-                  Reserver {quantity} {product.minimum_purchase > 1 ? `× ${product.minimum_purchase} ${product.unit_name}` : product.unit_name}
+                <Button onClick={handleAddToCart} size="lg" className="flex-1 gap-2">
+                  <ShoppingBag className="w-4 h-4" />
+                  Læg i kurv
                 </Button>
               </div>
             )}
@@ -226,8 +216,11 @@ export default function ProductDetailPage() {
             )}
 
             {!user && product.status === 'open' && !isComplete && (
-              <Button asChild size="lg" className="w-full">
-                <Link to="/auth?mode=signup">Opret konto for at reservere</Link>
+              <Button asChild size="lg" className="w-full gap-2">
+                <Link to="/auth?mode=signup">
+                  <ShoppingBag className="w-4 h-4" />
+                  Opret konto for at lægge i kurv
+                </Link>
               </Button>
             )}
 
@@ -237,20 +230,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* Confirmation dialog */}
-      {lastReservation && product && (
-        <ReservationConfirmDialog
-          open={confirmOpen}
-          onOpenChange={setConfirmOpen}
-          productTitle={product.title}
-          quantity={lastReservation.quantity}
-          unitName={product.unit_name}
-          pricePerUnit={product.price_per_unit}
-          currentQuantity={lastReservation.newCurrent}
-          targetQuantity={product.target_quantity}
-        />
-      )}
     </Layout>
   );
 }

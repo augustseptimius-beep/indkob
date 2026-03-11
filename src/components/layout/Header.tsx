@@ -11,6 +11,7 @@ import {
 import { Menu, User, LogOut, ShoppingBag, Settings, X, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useMyReservations } from '@/hooks/useReservations';
+import { useCart } from '@/contexts/CartContext';
 import { Badge } from '@/components/ui/badge';
 
 export function Header() {
@@ -18,6 +19,7 @@ export function Header() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: reservations } = useMyReservations();
+  const { itemCount, setIsOpen: openCart } = useCart();
 
   const handleSignOut = async () => {
     await signOut();
@@ -80,12 +82,24 @@ export function Header() {
             </Link>
             {user ?
               <>
-                {/* Min side with badge */}
+                {/* Cart button */}
+                <button
+                  onClick={() => openCart(true)}
+                  className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Åbn kurv"
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  {itemCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs">
+                      {itemCount}
+                    </Badge>
+                  )}
+                </button>
+
+                {/* Min side */}
                 <Link
                   to="/min-side"
                   className="relative flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-medium">
-                  
-                  <ShoppingBag className="h-5 w-5" />
                   <span>Min side</span>
                   {reservationCount > 0 &&
                   <Badge
@@ -93,7 +107,6 @@ export function Header() {
                     className={`absolute -top-2 -right-4 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs ${
                     hasPendingPayment ? 'animate-pulse' : ''}`
                     }>
-                    
                       {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-0.5" />}
                       {reservationCount}
                     </Badge>
@@ -130,24 +143,22 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
-            {user && reservationCount > 0 &&
-              <Link to="/min-side" className="relative p-2 group" title={hasPendingPayment ? `${unpaidActive.length} afventer betaling` : hasAwaitingPickup ? `${awaitingPickup.length} klar til afhentning` : `${reservationCount} aktive reservationer`}>
-                <ShoppingBag className="h-5 w-5" />
-                <Badge
-                  variant={hasPendingPayment ? "destructive" : "default"}
-                  className={`absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs ${
-                  hasPendingPayment ? 'animate-pulse' : ''}`
-                  }>
-                  
-                  {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-0.5" />}
-                  {reservationCount}
+            {/* Cart icon on mobile */}
+            <button
+              onClick={() => openCart(true)}
+              className="relative p-2"
+              title="Åbn kurv"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {itemCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs">
+                  {itemCount}
                 </Badge>
-              </Link>
-              }
+              )}
+            </button>
             <button
                 className="p-2"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>

@@ -86,6 +86,12 @@ const paymentConfirmedSchema = z.object({
   quantity: z.number()
 });
 
+const batchReservationSchema = z.object({
+  type: z.literal("batch_reservation_confirmed"),
+  batchId: z.string().uuid("Invalid batch ID format"),
+  userId: z.string().uuid("Invalid user ID format"),
+});
+
 // HMAC signature verification
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   try {
@@ -701,6 +707,118 @@ async function handlePaymentConfirmedEmail(
   return { success: result.success, emailsSent: result.success ? 1 : 0 };
 }
 
+// Handle batch reservation confirmation email
+async function handleBatchReservationEmail(
+  supabase: SupabaseClient,
+  batchId: string,
+  userId: string,
+  resendApiKey: string
+): Promise<{ success: boolean; emailsSent: number }> {
+  const profile = await getProfileWithEmail(supabase, userId);
+  if (!profile?.email) {
+    console.log("No email found for user");
+    return { success: true, emailsSent: 0 };
+  }
+
+  // Get all reservations for this batch
+  const { data: reservations, error } = await supabase
+    .from("reservations")
+    .select("*, product:products(*)")
+    .eq("batch_id", batchId)
+    .eq("user_id", userId);
+
+  if (error || !reservations || reservations.length === 0) {
+    console.log("No reservations found for batch", error);
+    return { success: true, emailsSent: 0 };
+  }
+
+  // Try to use template
+  const template = await getEmailTemplate(supabase, "batch_reservation_confirmed");
+
+  // Build items table HTML
+  let totalSum = 0;
+  const itemRows = reservations.map((r: any) => {
+    const product = r.product;
+    const lineTotal = r.quantity * product.price_per_unit;
+    totalSum += lineTotal;
+    return `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5;">${product.title}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: center;">${r.quantity} ${product.unit_name}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: right;">${product.price_per_unit.toFixed(2)} kr</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: right;">${lineTotal.toFixed(2)} kr</td>
+      </tr>
+    `;
+  }).join("");
+
+  const userName = profile.full_name || "Kære medlem";
+
+  let subject: string;
+  let bodyHtml: string;
+
+  if (template) {
+    const variables = {
+      user_name: userName,
+      user_email: profile.email,
+      item_count: reservations.length.toString(),
+      total_sum: totalSum.toFixed(2),
+      items_table: `
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+          <thead>
+            <tr style="background-color: #f8f7f4;">
+              <th style="padding: 8px; text-align: left;">Produkt</th>
+              <th style="padding: 8px; text-align: center;">Antal</th>
+              <th style="padding: 8px; text-align: right;">Pris</th>
+              <th style="padding: 8px; text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 8px; font-weight: bold; text-align: right;">Total:</td>
+              <td style="padding: 8px; font-weight: bold; text-align: right;">${totalSum.toFixed(2)} kr</td>
+            </tr>
+          </tfoot>
+        </table>
+      `,
+    };
+    subject = replaceTemplateVariables(template.subject, variables);
+    bodyHtml = replaceTemplateVariables(template.body_html, variables);
+  } else {
+    subject = `✅ Reservationsbekræftelse — ${reservations.length} ${reservations.length === 1 ? 'produkt' : 'produkter'}`;
+    bodyHtml = `
+      <p>Hej ${userName},</p>
+      <p>Vi bekræfter hermed dine reservationer:</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <thead>
+          <tr style="background-color: #f8f7f4;">
+            <th style="padding: 8px; text-align: left;">Produkt</th>
+            <th style="padding: 8px; text-align: center;">Antal</th>
+            <th style="padding: 8px; text-align: right;">Pris</th>
+            <th style="padding: 8px; text-align: right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="padding: 8px; font-weight: bold; text-align: right;">Total:</td>
+            <td style="padding: 8px; font-weight: bold; text-align: right;">${totalSum.toFixed(2)} kr</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <p>Du vil modtage besked, når varerne er klar til betaling og afhentning.</p>
+      <p>Se dine reservationer på <a href="https://indkob.lovable.app/min-side" style="color: #5c6b5a; font-weight: bold;">Min side</a>.</p>
+    `;
+  }
+
+  const result = await sendEmail([profile.email], subject, bodyHtml, resendApiKey, {
+    supabase, notificationType: "batch_reservation_confirmed", templateKey: "batch_reservation_confirmed", userId, recipientName: userName,
+  });
+  return { success: result.success, emailsSent: result.success ? 1 : 0 };
+}
+
 // Handle product status change (ordered/arrived) - original functionality
 async function handleProductStatusEmail(
   supabase: SupabaseClient,
@@ -859,23 +977,6 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const SIGNING_KEY = Deno.env.get("EDGE_FUNCTION_SIGNING_KEY");
-    if (!SIGNING_KEY) {
-      console.error("EDGE_FUNCTION_SIGNING_KEY is not configured");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const signature = req.headers.get("X-Signature");
-    if (!signature) {
-      console.error("Missing X-Signature header");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not configured");
@@ -902,16 +1003,43 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const isValidSignature = await verifySignature(rawBody, signature, SIGNING_KEY);
-    if (!isValidSignature) {
-      console.error("Invalid HMAC signature");
+    // Auth: accept either HMAC signature or JWT for batch requests
+    const signature = req.headers.get("X-Signature");
+    const authHeader = req.headers.get("Authorization");
+    let authenticatedUserId: string | null = null;
+
+    if (signature && SIGNING_KEY) {
+      const isValidSignature = await verifySignature(rawBody, signature, SIGNING_KEY);
+      if (!isValidSignature) {
+        console.error("Invalid HMAC signature");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log("HMAC signature verified successfully");
+    } else if (authHeader && parsedBody.type === "batch_reservation_confirmed") {
+      // For batch requests from frontend, verify JWT
+      const token = authHeader.replace("Bearer ", "");
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const userClient = createClient(supabaseUrl, anonKey);
+      const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+      if (authError || !user) {
+        console.error("Invalid JWT:", authError);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      authenticatedUserId = user.id;
+      console.log("JWT verified for user:", authenticatedUserId);
+    } else {
+      console.error("No valid authentication provided");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    console.log("HMAC signature verified successfully");
     console.log("Request body:", parsedBody);
 
     let result: { success: boolean; emailsSent: number; emailsFailed?: number };
@@ -993,6 +1121,29 @@ const handler = async (req: Request): Promise<Response> => {
         validation.data.userId,
         validation.data.productId,
         validation.data.quantity,
+        RESEND_API_KEY
+      );
+
+    } else if (parsedBody.type === "batch_reservation_confirmed") {
+      const validation = batchReservationSchema.safeParse(parsedBody);
+      if (!validation.success) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request parameters" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      // Security: ensure JWT user matches requested userId
+      if (authenticatedUserId && authenticatedUserId !== validation.data.userId) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log(`Sending batch reservation email for batch ${validation.data.batchId}`);
+      result = await handleBatchReservationEmail(
+        supabase,
+        validation.data.batchId,
+        validation.data.userId,
         RESEND_API_KEY
       );
 
