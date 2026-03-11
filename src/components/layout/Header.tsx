@@ -11,6 +11,7 @@ import {
 import { Menu, User, LogOut, ShoppingBag, Settings, X, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useMyReservations } from '@/hooks/useReservations';
+import { useCart } from '@/contexts/CartContext';
 import { Badge } from '@/components/ui/badge';
 
 export function Header() {
