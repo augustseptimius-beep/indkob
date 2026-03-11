@@ -1132,6 +1132,13 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
+      // Security: ensure JWT user matches requested userId
+      if (authenticatedUserId && authenticatedUserId !== validation.data.userId) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
       console.log(`Sending batch reservation email for batch ${validation.data.batchId}`);
       result = await handleBatchReservationEmail(
         supabase,
