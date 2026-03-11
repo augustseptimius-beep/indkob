@@ -82,12 +82,24 @@ export function Header() {
             </Link>
             {user ?
               <>
-                {/* Min side with badge */}
+                {/* Cart button */}
+                <button
+                  onClick={() => openCart(true)}
+                  className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Åbn kurv"
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  {itemCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs">
+                      {itemCount}
+                    </Badge>
+                  )}
+                </button>
+
+                {/* Min side */}
                 <Link
                   to="/min-side"
                   className="relative flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-medium">
-                  
-                  <ShoppingBag className="h-5 w-5" />
                   <span>Min side</span>
                   {reservationCount > 0 &&
                   <Badge
@@ -95,7 +107,6 @@ export function Header() {
                     className={`absolute -top-2 -right-4 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs ${
                     hasPendingPayment ? 'animate-pulse' : ''}`
                     }>
-                    
                       {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-0.5" />}
                       {reservationCount}
                     </Badge>
