@@ -19,6 +19,7 @@ export function Header() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: reservations } = useMyReservations();
+  const { itemCount, setIsOpen: openCart } = useCart();
 
   const handleSignOut = async () => {
     await signOut();
