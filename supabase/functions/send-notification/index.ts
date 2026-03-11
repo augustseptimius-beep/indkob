@@ -1114,6 +1114,22 @@ const handler = async (req: Request): Promise<Response> => {
         RESEND_API_KEY
       );
 
+    } else if (parsedBody.type === "batch_reservation_confirmed") {
+      const validation = batchReservationSchema.safeParse(parsedBody);
+      if (!validation.success) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request parameters" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log(`Sending batch reservation email for batch ${validation.data.batchId}`);
+      result = await handleBatchReservationEmail(
+        supabase,
+        validation.data.batchId,
+        validation.data.userId,
+        RESEND_API_KEY
+      );
+
     } else if (parsedBody.productId && parsedBody.notificationType) {
       // Legacy format for product status changes
       const validation = productNotificationSchema.safeParse(parsedBody);
