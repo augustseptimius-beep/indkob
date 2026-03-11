@@ -707,6 +707,118 @@ async function handlePaymentConfirmedEmail(
   return { success: result.success, emailsSent: result.success ? 1 : 0 };
 }
 
+// Handle batch reservation confirmation email
+async function handleBatchReservationEmail(
+  supabase: SupabaseClient,
+  batchId: string,
+  userId: string,
+  resendApiKey: string
+): Promise<{ success: boolean; emailsSent: number }> {
+  const profile = await getProfileWithEmail(supabase, userId);
+  if (!profile?.email) {
+    console.log("No email found for user");
+    return { success: true, emailsSent: 0 };
+  }
+
+  // Get all reservations for this batch
+  const { data: reservations, error } = await supabase
+    .from("reservations")
+    .select("*, product:products(*)")
+    .eq("batch_id", batchId)
+    .eq("user_id", userId);
+
+  if (error || !reservations || reservations.length === 0) {
+    console.log("No reservations found for batch", error);
+    return { success: true, emailsSent: 0 };
+  }
+
+  // Try to use template
+  const template = await getEmailTemplate(supabase, "batch_reservation_confirmed");
+
+  // Build items table HTML
+  let totalSum = 0;
+  const itemRows = reservations.map((r: any) => {
+    const product = r.product;
+    const lineTotal = r.quantity * product.price_per_unit;
+    totalSum += lineTotal;
+    return `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5;">${product.title}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: center;">${r.quantity} ${product.unit_name}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: right;">${product.price_per_unit.toFixed(2)} kr</td>
+        <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: right;">${lineTotal.toFixed(2)} kr</td>
+      </tr>
+    `;
+  }).join("");
+
+  const userName = profile.full_name || "Kære medlem";
+
+  let subject: string;
+  let bodyHtml: string;
+
+  if (template) {
+    const variables = {
+      user_name: userName,
+      user_email: profile.email,
+      item_count: reservations.length.toString(),
+      total_sum: totalSum.toFixed(2),
+      items_table: `
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+          <thead>
+            <tr style="background-color: #f8f7f4;">
+              <th style="padding: 8px; text-align: left;">Produkt</th>
+              <th style="padding: 8px; text-align: center;">Antal</th>
+              <th style="padding: 8px; text-align: right;">Pris</th>
+              <th style="padding: 8px; text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 8px; font-weight: bold; text-align: right;">Total:</td>
+              <td style="padding: 8px; font-weight: bold; text-align: right;">${totalSum.toFixed(2)} kr</td>
+            </tr>
+          </tfoot>
+        </table>
+      `,
+    };
+    subject = replaceTemplateVariables(template.subject, variables);
+    bodyHtml = replaceTemplateVariables(template.body_html, variables);
+  } else {
+    subject = `✅ Reservationsbekræftelse — ${reservations.length} ${reservations.length === 1 ? 'produkt' : 'produkter'}`;
+    bodyHtml = `
+      <p>Hej ${userName},</p>
+      <p>Vi bekræfter hermed dine reservationer:</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <thead>
+          <tr style="background-color: #f8f7f4;">
+            <th style="padding: 8px; text-align: left;">Produkt</th>
+            <th style="padding: 8px; text-align: center;">Antal</th>
+            <th style="padding: 8px; text-align: right;">Pris</th>
+            <th style="padding: 8px; text-align: right;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="padding: 8px; font-weight: bold; text-align: right;">Total:</td>
+            <td style="padding: 8px; font-weight: bold; text-align: right;">${totalSum.toFixed(2)} kr</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <p>Du vil modtage besked, når varerne er klar til betaling og afhentning.</p>
+      <p>Se dine reservationer på <a href="https://indkob.lovable.app/min-side" style="color: #5c6b5a; font-weight: bold;">Min side</a>.</p>
+    `;
+  }
+
+  const result = await sendEmail([profile.email], subject, bodyHtml, resendApiKey, {
+    supabase, notificationType: "batch_reservation_confirmed", templateKey: "batch_reservation_confirmed", userId, recipientName: userName,
+  });
+  return { success: result.success, emailsSent: result.success ? 1 : 0 };
+}
+
 // Handle product status change (ordered/arrived) - original functionality
 async function handleProductStatusEmail(
   supabase: SupabaseClient,
