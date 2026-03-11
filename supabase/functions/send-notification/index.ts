@@ -977,23 +977,6 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const SIGNING_KEY = Deno.env.get("EDGE_FUNCTION_SIGNING_KEY");
-    if (!SIGNING_KEY) {
-      console.error("EDGE_FUNCTION_SIGNING_KEY is not configured");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const signature = req.headers.get("X-Signature");
-    if (!signature) {
-      console.error("Missing X-Signature header");
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not configured");
@@ -1020,16 +1003,43 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const isValidSignature = await verifySignature(rawBody, signature, SIGNING_KEY);
-    if (!isValidSignature) {
-      console.error("Invalid HMAC signature");
+    // Auth: accept either HMAC signature or JWT for batch requests
+    const signature = req.headers.get("X-Signature");
+    const authHeader = req.headers.get("Authorization");
+    let authenticatedUserId: string | null = null;
+
+    if (signature && SIGNING_KEY) {
+      const isValidSignature = await verifySignature(rawBody, signature, SIGNING_KEY);
+      if (!isValidSignature) {
+        console.error("Invalid HMAC signature");
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log("HMAC signature verified successfully");
+    } else if (authHeader && parsedBody.type === "batch_reservation_confirmed") {
+      // For batch requests from frontend, verify JWT
+      const token = authHeader.replace("Bearer ", "");
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const userClient = createClient(supabaseUrl, anonKey);
+      const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+      if (authError || !user) {
+        console.error("Invalid JWT:", authError);
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      authenticatedUserId = user.id;
+      console.log("JWT verified for user:", authenticatedUserId);
+    } else {
+      console.error("No valid authentication provided");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    console.log("HMAC signature verified successfully");
     console.log("Request body:", parsedBody);
 
     let result: { success: boolean; emailsSent: number; emailsFailed?: number };
