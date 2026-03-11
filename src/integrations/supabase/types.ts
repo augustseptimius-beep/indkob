@@ -347,6 +347,7 @@ export type Database = {
       }
       reservations: {
         Row: {
+          batch_id: string | null
           created_at: string
           id: string
           paid: boolean
@@ -358,6 +359,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          batch_id?: string | null
           created_at?: string
           id?: string
           paid?: boolean
@@ -369,6 +371,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          batch_id?: string | null
           created_at?: string
           id?: string
           paid?: boolean
