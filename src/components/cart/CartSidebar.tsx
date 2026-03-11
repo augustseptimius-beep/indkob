@@ -46,21 +46,15 @@ export function CartSidebar() {
         if (error) throw error;
       }
 
-      // Send batch notification
+      // Send batch notification via supabase functions
       try {
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        await fetch(
-          `https://${projectId}.supabase.co/functions/v1/send-notification`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'batch_reservation_confirmed',
-              batchId,
-              userId: user.id,
-            }),
-          }
-        );
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            type: 'batch_reservation_confirmed',
+            batchId,
+            userId: user.id,
+          },
+        });
       } catch (e) {
         console.error('Batch notification failed:', e);
       }
