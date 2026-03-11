@@ -143,24 +143,22 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
-            {user && reservationCount > 0 &&
-              <Link to="/min-side" className="relative p-2 group" title={hasPendingPayment ? `${unpaidActive.length} afventer betaling` : hasAwaitingPickup ? `${awaitingPickup.length} klar til afhentning` : `${reservationCount} aktive reservationer`}>
-                <ShoppingBag className="h-5 w-5" />
-                <Badge
-                  variant={hasPendingPayment ? "destructive" : "default"}
-                  className={`absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs ${
-                  hasPendingPayment ? 'animate-pulse' : ''}`
-                  }>
-                  
-                  {hasPendingPayment && <AlertCircle className="h-3 w-3 mr-0.5" />}
-                  {reservationCount}
+            {/* Cart icon on mobile */}
+            <button
+              onClick={() => openCart(true)}
+              className="relative p-2"
+              title="Åbn kurv"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {itemCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-xs">
+                  {itemCount}
                 </Badge>
-              </Link>
-              }
+              )}
+            </button>
             <button
                 className="p-2"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
