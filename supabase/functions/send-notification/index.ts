@@ -47,7 +47,8 @@ const productNotificationSchema = z.object({
   productId: z.string().uuid("Invalid product ID format"),
   notificationType: z.enum(["ordered", "arrived"], {
     errorMap: () => ({ message: "Invalid notification type. Must be 'ordered' or 'arrived'" })
-  })
+  }),
+  reservationIds: z.array(z.string().uuid()).optional(),
 });
 
 const welcomeNotificationSchema = z.object({
