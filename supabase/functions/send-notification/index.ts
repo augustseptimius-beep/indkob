@@ -967,14 +967,21 @@ async function handleProductStatusEmail(
     }
   }
 
-  // Update reservation statuses
-  const reservationStatus = notificationType === "ordered" ? "ordered" : "ready";
-  await supabase
-    .from("reservations")
-    .update({ status: reservationStatus })
-    .eq("product_id", productId);
-
-  console.log(`Updated reservation statuses to ${reservationStatus}`);
+  // Update reservation statuses (only for arrived, since ordered is handled by DB trigger)
+  if (notificationType === "arrived") {
+    let statusQuery = supabase
+      .from("reservations")
+      .update({ status: "ready" })
+      .eq("product_id", productId)
+      .eq("status", "ordered");
+    
+    if (reservationIds && reservationIds.length > 0) {
+      statusQuery = statusQuery.in("id", reservationIds);
+    }
+    
+    await statusQuery;
+    console.log(`Updated reservation statuses to ready`);
+  }
 
   return { success: true, emailsSent: successCount, emailsFailed: failCount };
 }
