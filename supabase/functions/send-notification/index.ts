@@ -825,7 +825,8 @@ async function handleProductStatusEmail(
   supabase: SupabaseClient,
   productId: string,
   notificationType: "ordered" | "arrived",
-  resendApiKey: string
+  resendApiKey: string,
+  reservationIds?: string[]
 ): Promise<{ success: boolean; emailsSent: number; emailsFailed: number }> {
   const product = await getProduct(supabase, productId);
   if (!product) {
@@ -846,11 +847,18 @@ async function handleProductStatusEmail(
   
   const mobilepayNumber = (paymentInfo as { content: string | null } | null)?.content || "xxx-xxxxx";
 
-  // Get all reservations for this product
-  const { data: reservations, error: reservationsError } = await supabase
+  // Get reservations - only specific IDs if provided, otherwise all for this product
+  let query = supabase
     .from("reservations")
     .select("*")
     .eq("product_id", productId);
+  
+  if (reservationIds && reservationIds.length > 0) {
+    query = query.in("id", reservationIds);
+    console.log(`Filtering to ${reservationIds.length} specific reservation IDs`);
+  }
+
+  const { data: reservations, error: reservationsError } = await query;
 
   if (reservationsError) {
     console.error("Error fetching reservations:", reservationsError);
