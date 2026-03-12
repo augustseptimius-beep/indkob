@@ -215,14 +215,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {!user && product.status === 'open' && !isComplete && (
-              <Button asChild size="lg" className="w-full gap-2">
-                <Link to="/auth?mode=signup">
-                  <ShoppingBag className="w-4 h-4" />
-                  Opret konto for at lægge i kurv
-                </Link>
-              </Button>
-            )}
 
             {product.status === 'arrived' && (
               <Badge className="text-base px-4 py-2">Klar til afhentning</Badge>
