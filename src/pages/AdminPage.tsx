@@ -13,6 +13,7 @@ import { AdminUsers } from '@/components/admin/AdminUsers';
 import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
 import { AdminCategories } from '@/components/admin/AdminCategories';
 import { AdminEmailLog } from '@/components/admin/AdminEmailLog';
+import { AdminOrderHistory } from '@/components/admin/AdminOrderHistory';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
