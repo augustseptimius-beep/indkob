@@ -210,6 +210,10 @@ export default function AdminPage() {
             <AdminUsers />
           </TabsContent>
 
+          <TabsContent value="order-history">
+            <AdminOrderHistory />
+          </TabsContent>
+
           <TabsContent value="email-log">
             <AdminEmailLog />
           </TabsContent>
