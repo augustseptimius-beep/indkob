@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen, ScrollText } from 'lucide-react';
+import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen, ScrollText, History } from 'lucide-react';
 import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminOrders } from '@/components/admin/AdminOrders';
 import { AdminCMS } from '@/components/admin/AdminCMS';
