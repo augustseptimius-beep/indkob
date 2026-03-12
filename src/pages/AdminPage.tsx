@@ -174,6 +174,10 @@ export default function AdminPage() {
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Brugere</span>
               </TabsTrigger>
+              <TabsTrigger value="order-history" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">Historik</span>
+              </TabsTrigger>
               <TabsTrigger value="email-log" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ScrollText className="h-4 w-4" />
                 <span className="hidden sm:inline">Log</span>
