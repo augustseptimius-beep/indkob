@@ -1171,7 +1171,8 @@ const handler = async (req: Request): Promise<Response> => {
         supabase,
         validation.data.productId,
         validation.data.notificationType,
-        RESEND_API_KEY
+        RESEND_API_KEY,
+        validation.data.reservationIds
       );
 
     } else {
