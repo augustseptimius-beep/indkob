@@ -147,7 +147,15 @@ export function AdminOrderHistory() {
                               {r.paid ? (
                                 <Badge className="bg-green-100 text-green-800 text-xs">Betalt</Badge>
                               ) : (
-                                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Ubetalt</Badge>
+                                <Button
+                                  onClick={() => markReservationAsPaid(r.id)}
+                                  disabled={markingPaid === r.id}
+                                  size="sm"
+                                  className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {markingPaid === r.id ? '...' : 'Marker betalt'}
+                                </Button>
                               )}
                             </div>
                           </div>
