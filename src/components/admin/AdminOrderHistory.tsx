@@ -2,10 +2,13 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
+import { useUpdateReservation } from '@/hooks/useReservations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CheckCircle, Search, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Reservation } from '@/lib/supabase-types';
 
 export function AdminOrderHistory() {
