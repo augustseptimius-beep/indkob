@@ -13,7 +13,21 @@ import type { Reservation } from '@/lib/supabase-types';
 
 export function AdminOrderHistory() {
   const { data: products } = useProducts();
+  const updateReservation = useUpdateReservation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+
+  const markReservationAsPaid = async (reservationId: string) => {
+    setMarkingPaid(reservationId);
+    try {
+      await updateReservation.mutateAsync({ id: reservationId, paid: true, paid_at: new Date().toISOString() });
+      toast.success('Reservation markeret som betalt');
+    } catch (error: any) {
+      toast.error('Kunne ikke markere som betalt', { description: error.message });
+    } finally {
+      setMarkingPaid(null);
+    }
+  };
 
   const { data: completedReservations, isLoading } = useQuery({
     queryKey: ['completed-reservations'],
