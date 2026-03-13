@@ -2,15 +2,32 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useProducts';
+import { useUpdateReservation } from '@/hooks/useReservations';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CheckCircle, Search, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Reservation } from '@/lib/supabase-types';
 
 export function AdminOrderHistory() {
   const { data: products } = useProducts();
+  const updateReservation = useUpdateReservation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+
+  const markReservationAsPaid = async (reservationId: string) => {
+    setMarkingPaid(reservationId);
+    try {
+      await updateReservation.mutateAsync({ id: reservationId, paid: true, paid_at: new Date().toISOString() });
+      toast.success('Reservation markeret som betalt');
+    } catch (error: any) {
+      toast.error('Kunne ikke markere som betalt', { description: error.message });
+    } finally {
+      setMarkingPaid(null);
+    }
+  };
 
   const { data: completedReservations, isLoading } = useQuery({
     queryKey: ['completed-reservations'],
@@ -130,7 +147,15 @@ export function AdminOrderHistory() {
                               {r.paid ? (
                                 <Badge className="bg-green-100 text-green-800 text-xs">Betalt</Badge>
                               ) : (
-                                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Ubetalt</Badge>
+                                <Button
+                                  onClick={() => markReservationAsPaid(r.id)}
+                                  disabled={markingPaid === r.id}
+                                  size="sm"
+                                  className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" />
+                                  {markingPaid === r.id ? '...' : 'Marker betalt'}
+                                </Button>
                               )}
                             </div>
                           </div>

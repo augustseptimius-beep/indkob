@@ -467,14 +467,25 @@ export function AdminOrders() {
                                 ) : (
                                   <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Ubetalt</Badge>
                                 )}
-                                <Button
-                                  onClick={() => markReservationAsCompleted(r.id)}
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                >
-                                  Afhentet
-                                </Button>
+                                {r.paid ? (
+                                  <Button
+                                    onClick={() => markReservationAsCompleted(r.id)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs"
+                                  >
+                                    Afhentet
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    onClick={() => markReservationAsPaid(r.id)}
+                                    disabled={markingPaid === r.id}
+                                    size="sm"
+                                    className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                                  >
+                                    {markingPaid === r.id ? '...' : 'Marker betalt'}
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           ))}
