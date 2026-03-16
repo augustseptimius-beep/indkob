@@ -137,6 +137,30 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_consents: {
+        Row: {
+          accepted_at: string
+          consent_text: string
+          consent_version: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          consent_text: string
+          consent_version?: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          consent_text?: string
+          consent_version?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
