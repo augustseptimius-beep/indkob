@@ -50,7 +50,7 @@ export function HeroSection() {
           </p>
 
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-slide-up delay-200">
-            Vi er et lokalt indkøbsfællesskab, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser.
+            Vi er et lokalt indkøbsfællesskab, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser. Platformen er gratis i beta-perioden — driftsudgifter dækkes af initiativtager August.
           </p>
 
           {/* CTAs */}
