@@ -81,14 +81,19 @@ export default function AuthPage() {
             toast.error(error.message || 'Kunne ikke oprette bruger');
           }
         } else {
-          // Store consent in database
+          // Store consent in database — non-blocking, but log errors
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
-            await supabase.from('membership_consents').insert({
+            const { error: consentError } = await supabase.from('membership_consents').insert({
               user_id: session.user.id,
               consent_text: CONSENT_TEXT,
               consent_version: CONSENT_VERSION,
             });
+            if (consentError) {
+              console.error('CRITICAL: Consent insert failed for user', session.user.id, consentError);
+            }
+          } else {
+            console.error('CRITICAL: No session after signup — consent not stored for email:', email);
           }
           toast.success('Velkommen! Du er nu medlem.');
           navigate('/min-side');
