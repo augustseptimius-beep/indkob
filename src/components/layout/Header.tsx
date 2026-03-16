@@ -42,7 +42,7 @@ export function Header() {
     <div className="sticky top-0 z-50">
       {/* Beta Banner */}
       <div className="bg-accent text-accent-foreground text-center py-1.5 text-xs font-medium">
-        🚧 Beta-version — Denne platform er stadig under udvikling 
+        🚧 Beta-version — Gratis i testperioden. Ved 25+ medlemmer afholdes stiftende generalforsamling.
       </div>
       <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
       <div className="container-wide">

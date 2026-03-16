@@ -5,10 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
+
+const CONSENT_VERSION = 1;
+const CONSENT_TEXT = 'Jeg accepterer at blive medlem af den kommende forening Klitmøllers Indkøbsfællesskab. Medlemskab er gratis i beta-perioden, men vil fremadrettet koste et mindre årligt kontingent som dækker platformens drift.';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
@@ -20,6 +24,7 @@ export default function AuthPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [acceptConsent, setAcceptConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -63,6 +68,11 @@ export default function AuthPage() {
           setIsLoading(false);
           return;
         }
+        if (!acceptConsent) {
+          toast.error('Du skal acceptere betingelserne for at oprette en konto');
+          setIsLoading(false);
+          return;
+        }
         const { error } = await signUp(email, password, firstName, lastName, phone);
         if (error) {
           if (error.message.includes('already registered')) {
@@ -71,6 +81,15 @@ export default function AuthPage() {
             toast.error(error.message || 'Kunne ikke oprette bruger');
           }
         } else {
+          // Store consent in database
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            await supabase.from('membership_consents').insert({
+              user_id: session.user.id,
+              consent_text: CONSENT_TEXT,
+              consent_version: CONSENT_VERSION,
+            });
+          }
           toast.success('Velkommen! Du er nu medlem.');
           navigate('/min-side');
         }
@@ -243,6 +262,25 @@ export default function AuthPage() {
                     minLength={6}
                   />
                 </div>
+
+                {/* Consent checkbox - only shown on signup */}
+                {!isLogin && (
+                  <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-4">
+                    <Checkbox
+                      id="consent"
+                      checked={acceptConsent}
+                      onCheckedChange={(checked) => setAcceptConsent(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <label
+                      htmlFor="consent"
+                      className="text-sm text-muted-foreground leading-relaxed cursor-pointer"
+                    >
+                      {CONSENT_TEXT}
+                    </label>
+                  </div>
+                )}
+
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isLogin ? 'Log ind' : 'Opret konto'}

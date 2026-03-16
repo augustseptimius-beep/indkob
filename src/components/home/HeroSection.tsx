@@ -89,11 +89,11 @@ export function HeroSection() {
           </div>
           <div className="bg-card rounded-2xl p-6 text-center shadow-sm animate-slide-up delay-300">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Leaf className="w-6 h-6 text-primary" />
+              <Landmark className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-serif text-lg font-semibold mb-2">Bæredygtigt</h3>
+            <h3 className="font-serif text-lg font-semibold mb-2">På vej mod forening</h3>
             <p className="text-muted-foreground text-sm">
-              Mindre emballage og transport ved fælles indkøb
+              Ved 25+ medlemmer stiftes en forening. Gratis i beta-perioden.
             </p>
           </div>
         </div>
