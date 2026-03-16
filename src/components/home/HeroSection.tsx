@@ -26,8 +26,8 @@ export function HeroSection() {
           {/* Badge with member count */}
           <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 py-2 rounded-2xl sm:rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
             <div className="flex items-center gap-2">
-              <Leaf className="w-4 h-4 shrink-0" />
-              <span className="text-sm font-medium">Fællesskab & Bæredygtighed</span>
+              <Users className="w-4 h-4 shrink-0" />
+              <span className="text-sm font-medium">Lokalt fællesskab</span>
             </div>
             {memberCount !== undefined && memberCount > 0 && (
               <>
