@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Users, Leaf, Package } from 'lucide-react';
+import { ArrowRight, Users, Package, Landmark } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,8 +26,8 @@ export function HeroSection() {
           {/* Badge with member count */}
           <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 py-2 rounded-2xl sm:rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
             <div className="flex items-center gap-2">
-              <Leaf className="w-4 h-4 shrink-0" />
-              <span className="text-sm font-medium">Fællesskab & Bæredygtighed</span>
+              <Users className="w-4 h-4 shrink-0" />
+              <span className="text-sm font-medium">Lokalt fællesskab</span>
             </div>
             {memberCount !== undefined && memberCount > 0 && (
               <>
@@ -50,7 +50,7 @@ export function HeroSection() {
           </p>
 
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-slide-up delay-200">
-            Vi er et lokalt indkøbsfællesskab, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser.
+            Vi er et lokalt indkøbsfællesskab, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser. Platformen er gratis i beta-perioden — driftsudgifter dækkes af initiativtager August.
           </p>
 
           {/* CTAs */}
@@ -89,11 +89,11 @@ export function HeroSection() {
           </div>
           <div className="bg-card rounded-2xl p-6 text-center shadow-sm animate-slide-up delay-300">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Leaf className="w-6 h-6 text-primary" />
+              <Landmark className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="font-serif text-lg font-semibold mb-2">Bæredygtigt</h3>
+            <h3 className="font-serif text-lg font-semibold mb-2">På vej mod forening</h3>
             <p className="text-muted-foreground text-sm">
-              Mindre emballage og transport ved fælles indkøb
+              Ved 25+ medlemmer stiftes en forening. Gratis i beta-perioden.
             </p>
           </div>
         </div>

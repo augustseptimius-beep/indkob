@@ -1,46 +1,34 @@
 
 
-## Plan: Beta-lancering — tekster, samtykke med juridisk dokumentation
+## Plan: Forbedret Brugeradministration
 
 ### Oversigt
-Opdaterer beta-banner, forsidetekster, og signup-flow. Gemmer samtykke i databasen med tidsstempel og versioneret tekst, så det kan dokumenteres hvad brugeren accepterede.
+Opgraderer AdminUsers-komponenten med tre hovedelementer: bruger-vækst graf, søgefunktion, og mulighed for at slette brugere.
 
-### Databaseændring
+### Hvad der bygges
 
-**Ny tabel: `membership_consents`**
-- `id` (uuid, PK)
-- `user_id` (uuid, NOT NULL)
-- `consent_text` (text, NOT NULL) — den fulde tekst brugeren accepterede
-- `consent_version` (integer, NOT NULL, default 1) — versionsnummer
-- `accepted_at` (timestamptz, NOT NULL, default now())
+**1. Statistik-kort og vækstgraf (recharts)**
+- Kort der viser: Totalt antal brugere, nye denne måned, antal admins
+- Linjegraf der viser bruger-tilgang over tid (baseret på `profiles.created_at`)
+- Data grupperes pr. uge/måned afhængig af antal brugere
 
-RLS: Brugere kan insertte egne + læse egne. Admins kan læse alle.
+**2. Søgning og filtrering**
+- Søgefelt der filtrerer på navn (client-side fra allerede hentet data)
+- Filter-mulighed for rolle (alle / admin / medlem)
+- Tabelvisning i stedet for kort-layout for bedre overblik ved mange brugere
 
-### Filer der ændres
-
-**1. `src/components/layout/Header.tsx`** (linje 44-46)
-- Beta-banner udvides: "🚧 Beta-version — Gratis i testperioden. Ved 25+ medlemmer afholdes stiftende generalforsamling."
-
-**2. `src/components/home/HeroSection.tsx`**
-- Fjern "Bæredygtighed" fra badge (linje 30) — erstat med "Lokalt fællesskab"
-- Fjern Leaf-ikonet fra badge, brug kun Users
-- Erstat tredje feature-kort (Bæredygtigt, linje 90-98) med forenings-kort: "På vej mod forening — Ved 25+ medlemmer stiftes en forening. Gratis i beta."
-- Opdater undertekst (linje 52-54) til at nævne at August dækker driftsudgifter i beta
-
-**3. `src/components/home/SignupBanner.tsx`**
-- Opdater teksten til at nævne forening og gratis beta vs. fremtidigt kontingent (allerede delvist gjort linje 28-29, men udvid)
-
-**4. `src/pages/AuthPage.tsx`**
-- Tilføj `acceptConsent` state (boolean)
-- Tilføj checkbox med samtykketekst (konstant `CONSENT_TEXT_V1`): "Jeg accepterer at blive medlem af den kommende forening Klitmøllers Indkøbsfællesskab. Medlemskab er gratis i beta-perioden, men vil fremadrettet koste et mindre årligt kontingent som dækker platformens drift."
-- Validation: checkbox skal være checked før signup
-- Efter succesfuld signup: insert i `membership_consents` med `consent_text`, `consent_version: 1`, og brugerens user_id
-
-**5. `src/contexts/AuthContext.tsx`**
-- Ingen ændringer — consent gemmes efter signup i AuthPage, ikke i AuthContext
+**3. Sletning af brugere**
+- Slet-knap pr. bruger med bekræftelsesdialog
+- Sletningen fjerner brugerens profil, reservationer, wishlist, roller og kommentarer via klient-side kaskade (samme mønster som DeleteAccountSection)
+- Auth-brugeren kan ikke slettes fra klienten (kræver service role), men alle public-data ryddes
+- Admin kan ikke slette sig selv
 
 ### Tekniske detaljer
-- Consent-teksten defineres som en konstant (`CONSENT_TEXT_V1`) i AuthPage, så den nemt kan versioneres
-- Consent insertes client-side efter signup returnerer succesfuldt (bruger har nu en session)
-- Versionsnummer gør det muligt at spore hvilken version af teksten brugeren accepterede
+
+**Filer der ændres:**
+- `src/components/admin/AdminUsers.tsx` - komplet omskrivning med de tre features
+
+**Ingen databaseændringer** - alt data hentes fra eksisterende `profiles` og `user_roles` tabeller. Grafen beregnes client-side ud fra `created_at` timestamps.
+
+**Afhængigheder** - bruger eksisterende `recharts`, `lucide-react`, shadcn-komponenter (Table, Input, Select, AlertDialog).
 
