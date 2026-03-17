@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { CookieBanner } from "@/components/CookieBanner";
+import { ConsentModal } from "@/components/ConsentModal";
 import { CartSidebar } from "@/components/cart/CartSidebar";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <CookieBanner />
+            <ConsentModal />
             <CartSidebar />
           </BrowserRouter>
         </TooltipProvider>
