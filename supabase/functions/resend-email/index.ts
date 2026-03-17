@@ -145,6 +145,104 @@ serve(async (req: Request) => {
             variables.price_per_unit = product.price_per_unit.toString();
             variables.unit_name = product.unit_name;
             variables.target_quantity = product.target_quantity.toString();
+            variables.current_quantity = product.current_quantity.toString();
+            variables.remaining_quantity = (product.target_quantity - product.current_quantity).toString();
+            variables.minimum_purchase = (product.minimum_purchase || 1).toString();
+
+            // Get reservation count for this product
+            const { count: reservationCount } = await supabase
+              .from("reservations")
+              .select("*", { count: "exact", head: true })
+              .eq("product_id", logEntry.product_id);
+            variables.reservation_count = (reservationCount || 0).toString();
+          }
+        }
+
+        // Get reservation data (quantity, total_price) if user + product are available
+        if (logEntry.user_id && logEntry.product_id) {
+          const { data: reservation } = await supabase
+            .from("reservations")
+            .select("quantity, paid_at")
+            .eq("user_id", logEntry.user_id)
+            .eq("product_id", logEntry.product_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (reservation) {
+            variables.quantity = reservation.quantity.toString();
+            const pricePerUnit = parseFloat(variables.price_per_unit || "0");
+            variables.total_price = (reservation.quantity * pricePerUnit).toFixed(2);
+          }
+        }
+
+        // Get MobilePay number from CMS
+        const { data: paymentInfo } = await supabase
+          .from("cms_content")
+          .select("content")
+          .eq("key", "payment_info")
+          .maybeSingle();
+        variables.mobilepay_number = paymentInfo?.content || "xxx-xxxxx";
+
+        // paid_at fallback
+        variables.paid_at = new Date().toLocaleDateString("da-DK");
+
+        // Handle batch reservation templates
+        if (logEntry.template_key === "batch_reservation_confirmed" && logEntry.user_id) {
+          // Find batch_id from a reservation for this user
+          const { data: batchRes } = await supabase
+            .from("reservations")
+            .select("batch_id")
+            .eq("user_id", logEntry.user_id)
+            .not("batch_id", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (batchRes?.batch_id) {
+            const { data: batchReservations } = await supabase
+              .from("reservations")
+              .select("quantity, product:products(title, price_per_unit, unit_name)")
+              .eq("batch_id", batchRes.batch_id)
+              .eq("user_id", logEntry.user_id);
+
+            if (batchReservations && batchReservations.length > 0) {
+              let totalSum = 0;
+              const itemRows = batchReservations.map((r: any) => {
+                const product = r.product;
+                const lineTotal = r.quantity * product.price_per_unit;
+                totalSum += lineTotal;
+                return `
+                  <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #e5e5e5;">${product.title}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: center;">${r.quantity} ${product.unit_name}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: right;">${product.price_per_unit.toFixed(2)} kr</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e5e5e5; text-align: right;">${lineTotal.toFixed(2)} kr</td>
+                  </tr>
+                `;
+              }).join("");
+
+              variables.item_count = batchReservations.length.toString();
+              variables.total_sum = totalSum.toFixed(2);
+              variables.items_table = `
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                  <thead>
+                    <tr style="background-color: #f8f7f4;">
+                      <th style="padding: 8px; text-align: left;">Produkt</th>
+                      <th style="padding: 8px; text-align: center;">Antal</th>
+                      <th style="padding: 8px; text-align: right;">Pris</th>
+                      <th style="padding: 8px; text-align: right;">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>${itemRows}</tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="3" style="padding: 8px; font-weight: bold; text-align: right;">Total:</td>
+                      <td style="padding: 8px; font-weight: bold; text-align: right;">${totalSum.toFixed(2)} kr</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              `;
+            }
           }
         }
 
