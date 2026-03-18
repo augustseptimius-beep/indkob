@@ -50,9 +50,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 min-w-10 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-serif font-bold text-sm">KIF</span>
-            </div>
+            <BasketHeartIcon className="w-9 h-9 min-w-9 text-primary" />
             <span className="hidden sm:block font-serif text-xl font-semibold text-foreground">
               Klitmøllers Indkøbsfællesskab
             </span>
