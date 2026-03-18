@@ -272,6 +272,9 @@ export default function MyPage() {
                                           <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
                                             {reservation.quantity} {reservation.product?.unit_name} × {reservation.product?.price_per_unit.toFixed(2)} kr
                                           </p>
+                                          <p className="text-xs text-muted-foreground/70 mt-0.5">
+                                            Reserveret {new Date(reservation.created_at).toLocaleDateString('da-DK', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                          </p>
 
                                           {reservation.paid && (
                                             <div className="flex items-center gap-1 text-green-600 text-xs mt-1">
