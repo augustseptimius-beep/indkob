@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { BasketHeartIcon } from '@/components/icons/BasketHeartIcon';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
