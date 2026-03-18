@@ -115,7 +115,7 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/min-side`,
+        redirectTo: `${window.location.origin}/nulstil-adgangskode`,
       });
       if (error) {
         toast.error(error.message || 'Kunne ikke sende nulstillingslink');
