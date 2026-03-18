@@ -21,6 +21,13 @@ export function ConsentModal() {
     if (!user || hasChecked) return;
 
     const checkConsent = async () => {
+      // Skip check if user was created in the last 30 seconds (signup just happened, consent already stored inline)
+      const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+      if (Date.now() - createdAt < 30000) {
+        setHasChecked(true);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('membership_consents')
         .select('id')
