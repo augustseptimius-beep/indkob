@@ -283,7 +283,20 @@ export function AdminOrders() {
                             <Progress value={(product.current_quantity / product.target_quantity) * 100} className="h-2 flex-1" />
                             <span className="text-sm font-medium whitespace-nowrap">{product.current_quantity} / {product.target_quantity}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">{pendingCount} reservationer klar til bestilling</p>
+                          <div className="bg-background/60 rounded-lg p-3 space-y-2 mt-2">
+                            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                              <Users className="h-3.5 w-3.5" />
+                              {pendingCount} reservationer klar til bestilling
+                            </p>
+                            <div className="divide-y divide-border">
+                              {(pendingReservationsByProduct[product.id] || []).map(r => (
+                                <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
+                                  <span className="font-medium truncate">{getUserDisplay(r.user_id)}</span>
+                                  <span className="text-muted-foreground whitespace-nowrap ml-2">{r.quantity} {product.unit_name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <Button
