@@ -350,16 +350,14 @@ export function AdminOrders() {
                           </p>
                           <div className="space-y-1.5">
                             {batch.map(r => (
-                              <div key={r.id} className="flex items-center justify-between text-sm">
-                                <span className="font-medium truncate">{getUserDisplay(r.user_id)}</span>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground">{r.quantity} {product?.unit_name}</span>
-                                  {r.paid ? (
-                                    <Badge className="bg-green-100 text-green-800 text-xs">Betalt</Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Ubetalt</Badge>
-                                  )}
-                                </div>
+                              <div key={r.id} className="flex items-center gap-2 py-1.5 text-sm border-b border-border last:border-0">
+                                <span className="font-medium truncate flex-1 min-w-0">{getUserDisplay(r.user_id)}</span>
+                                <span className="text-muted-foreground whitespace-nowrap text-xs">{r.quantity} {product?.unit_name}</span>
+                                {r.paid ? (
+                                  <Badge className="bg-green-100 text-green-800 text-xs shrink-0">Betalt</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 shrink-0">Ubetalt</Badge>
+                                )}
                               </div>
                             ))}
                           </div>
