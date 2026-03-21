@@ -93,7 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
+    // If "remember me" is unchecked, we'll clear the session on browser close
+    if (!rememberMe) {
+      // Store flag so we can clear session storage on next load if needed
+      sessionStorage.setItem('forget-on-close', 'true');
+    } else {
+      sessionStorage.removeItem('forget-on-close');
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
