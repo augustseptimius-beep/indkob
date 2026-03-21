@@ -269,6 +269,23 @@ export default function AuthPage() {
                   />
                 </div>
 
+                {/* Remember me - only shown on login */}
+                {isLogin && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <label
+                      htmlFor="rememberMe"
+                      className="text-sm text-muted-foreground cursor-pointer select-none"
+                    >
+                      Husk mig
+                    </label>
+                  </div>
+                )}
+
                 {/* Consent checkbox - only shown on signup */}
                 {!isLogin && (
                   <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-4">
