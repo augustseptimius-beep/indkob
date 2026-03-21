@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen, ScrollText, History } from 'lucide-react';
+import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen, ScrollText, History, Megaphone } from 'lucide-react';
 import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminOrders } from '@/components/admin/AdminOrders';
 import { AdminCMS } from '@/components/admin/AdminCMS';
@@ -14,6 +14,7 @@ import { AdminEmailTemplates } from '@/components/admin/AdminEmailTemplates';
 import { AdminCategories } from '@/components/admin/AdminCategories';
 import { AdminEmailLog } from '@/components/admin/AdminEmailLog';
 import { AdminOrderHistory } from '@/components/admin/AdminOrderHistory';
+import { AdminBroadcastEmail } from '@/components/admin/AdminBroadcastEmail';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -178,6 +179,10 @@ export default function AdminPage() {
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">Historik</span>
               </TabsTrigger>
+              <TabsTrigger value="broadcast" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Megaphone className="h-4 w-4" />
+                <span className="hidden sm:inline">Broadcast</span>
+              </TabsTrigger>
               <TabsTrigger value="email-log" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ScrollText className="h-4 w-4" />
                 <span className="hidden sm:inline">Log</span>
@@ -212,6 +217,10 @@ export default function AdminPage() {
 
           <TabsContent value="order-history">
             <AdminOrderHistory />
+          </TabsContent>
+
+          <TabsContent value="broadcast">
+            <AdminBroadcastEmail />
           </TabsContent>
 
           <TabsContent value="email-log">

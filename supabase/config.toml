@@ -13,3 +13,5 @@ project_id = "xekuhgwajypsblglrctp"
     verify_jwt = false
   [functions.create-checkout]
     verify_jwt = false
+  [functions.send-broadcast-email]
+    verify_jwt = false
