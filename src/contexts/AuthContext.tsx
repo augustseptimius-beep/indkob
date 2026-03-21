@@ -22,6 +22,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // If user chose not to be remembered, sign out when they reopen the browser
+    const forgetOnClose = sessionStorage.getItem('forget-on-close');
+    if (!forgetOnClose && localStorage.getItem('forget-session') === 'true') {
+      localStorage.removeItem('forget-session');
+      supabase.auth.signOut();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Persist the "forget" flag to localStorage on beforeunload so it survives browser close
+    const handleBeforeUnload = () => {
+      if (sessionStorage.getItem('forget-on-close') === 'true') {
+        localStorage.setItem('forget-session', 'true');
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
