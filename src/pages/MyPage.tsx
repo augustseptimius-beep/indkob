@@ -24,7 +24,7 @@ import { ProfileSettings } from '@/components/profile/ProfileSettings';
 import { PasswordSettings } from '@/components/profile/PasswordSettings';
 import { DeleteAccountSection } from '@/components/profile/DeleteAccountSection';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Package, CreditCard, Smartphone, Settings, ShoppingBag, CheckCircle, Minus, Plus, Pencil, Trash2, Save, X } from 'lucide-react';
+import { Package, CreditCard, Smartphone, Settings, ShoppingBag, CheckCircle, Minus, Plus, Pencil, Trash2, Save, X, Shield, ShieldOff } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -346,6 +346,33 @@ export default function MyPage() {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
+            {/* Session persistence indicator */}
+            {(() => {
+              const isRemembered = !sessionStorage.getItem('forget-on-close');
+              return (
+                <Card>
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3">
+                      {isRemembered ? (
+                        <Shield className="w-5 h-5 text-success shrink-0" />
+                      ) : (
+                        <ShieldOff className="w-5 h-5 text-muted-foreground shrink-0" />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium">
+                          {isRemembered ? 'Session huskes' : 'Session huskes ikke'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {isRemembered
+                            ? 'Du forbliver logget ind, også efter du lukker browseren.'
+                            : 'Du logges automatisk ud, når du lukker browseren.'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
             <ProfileSettings profile={profile} onUpdate={handleProfileUpdate} />
             <PasswordSettings />
             <DeleteAccountSection 
