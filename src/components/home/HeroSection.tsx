@@ -8,13 +8,13 @@ export function HeroSection() {
   const { data: memberCount } = useQuery({
     queryKey: ['member-count'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-      
+      const { count, error } = await supabase.
+      from('profiles').
+      select('*', { count: 'exact', head: true });
+
       if (error) throw error;
       return count || 0;
-    },
+    }
   });
 
   return <section className="relative overflow-hidden">
@@ -29,15 +29,15 @@ export function HeroSection() {
               <Users className="w-4 h-4 shrink-0" />
               <span className="text-sm font-medium">Lokalt fællesskab</span>
             </div>
-            {memberCount !== undefined && memberCount > 0 && (
-              <>
+            {memberCount !== undefined && memberCount > 0 &&
+          <>
                 <span className="hidden sm:block w-px h-4 bg-primary/30" />
                 <div className="flex items-center gap-1.5">
                   <Users className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-semibold">{memberCount} medlemmer</span>
                 </div>
               </>
-            )}
+          }
           </div>
 
           {/* Title */}
@@ -50,8 +50,13 @@ export function HeroSection() {
           </p>
 
           <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-slide-up delay-200">
-            Vi er et lokalt indkøbsfællesskab, hvor beboere går sammen om at købe store partier af kvalitetsvarer til favorable priser. Platformen er gratis i beta-perioden — driftsudgifter dækkes af initiativtager August.
-          </p>
+            Hej Klitmøller - Vi er forsøg på et lokalt indkøbsfællesskab, hvor vi går sammen om at købe store partier af kvalitetsvarer til gode priser. Fællesskabet og platformen her er gratis i test-perioden, men virker som den skal.  
+  
+  
+      
+          
+        
+        </p>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up delay-300">
@@ -98,5 +103,4 @@ export function HeroSection() {
           </div>
         </div>
       </div>
-    </section>;
-}
+    </section>;}
