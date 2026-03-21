@@ -492,6 +492,8 @@ async function handleNewProductEmail(
     }
 
     const member = members[i];
+    const siteUrl = Deno.env.get("SITE_URL") || "https://indkob.lovable.app";
+    const productUrl = `${siteUrl}/produkt/${product.id}`;
     const variables = {
       user_name: member.full_name || "Kære medlem",
       user_email: member.email,
@@ -500,6 +502,7 @@ async function handleNewProductEmail(
       price_per_unit: product.price_per_unit.toString(),
       unit_name: product.unit_name,
       target_quantity: product.target_quantity.toString(),
+      product_url: productUrl,
     };
 
     const subject = replaceTemplateVariables(template.subject, variables);
