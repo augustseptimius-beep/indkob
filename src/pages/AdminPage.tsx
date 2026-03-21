@@ -179,6 +179,10 @@ export default function AdminPage() {
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">Historik</span>
               </TabsTrigger>
+              <TabsTrigger value="broadcast" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Megaphone className="h-4 w-4" />
+                <span className="hidden sm:inline">Broadcast</span>
+              </TabsTrigger>
               <TabsTrigger value="email-log" className="flex items-center gap-1.5 text-xs sm:text-sm">
                 <ScrollText className="h-4 w-4" />
                 <span className="hidden sm:inline">Log</span>
