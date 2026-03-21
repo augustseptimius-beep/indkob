@@ -204,7 +204,7 @@ export default function AdminPage() {
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-x-hidden">
           {/* Mobile header */}
           <div className="lg:hidden flex items-center gap-3 border-b px-4 py-3">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
