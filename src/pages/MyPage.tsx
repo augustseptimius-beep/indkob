@@ -24,7 +24,7 @@ import { ProfileSettings } from '@/components/profile/ProfileSettings';
 import { PasswordSettings } from '@/components/profile/PasswordSettings';
 import { DeleteAccountSection } from '@/components/profile/DeleteAccountSection';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Package, CreditCard, Smartphone, Settings, ShoppingBag, CheckCircle, Minus, Plus, Pencil, Trash2, Save, X } from 'lucide-react';
+import { Package, CreditCard, Smartphone, Settings, ShoppingBag, CheckCircle, Minus, Plus, Pencil, Trash2, Save, X, Shield, ShieldOff } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
