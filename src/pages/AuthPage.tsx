@@ -25,6 +25,7 @@ export default function AuthPage() {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [acceptConsent, setAcceptConsent] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(email, password, rememberMe);
         if (error) {
           toast.error(error.message || 'Kunne ikke logge ind');
         } else {
@@ -267,6 +268,23 @@ export default function AuthPage() {
                     minLength={6}
                   />
                 </div>
+
+                {/* Remember me - only shown on login */}
+                {isLogin && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    />
+                    <label
+                      htmlFor="rememberMe"
+                      className="text-sm text-muted-foreground cursor-pointer select-none"
+                    >
+                      Husk mig
+                    </label>
+                  </div>
+                )}
 
                 {/* Consent checkbox - only shown on signup */}
                 {!isLogin && (

@@ -9,7 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   signUp: (email: string, password: string, firstName: string, lastName: string, phone?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -20,6 +20,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // If user chose not to be remembered, sign out when they reopen the browser
+    const forgetOnClose = sessionStorage.getItem('forget-on-close');
+    if (!forgetOnClose && localStorage.getItem('forget-session') === 'true') {
+      localStorage.removeItem('forget-session');
+      supabase.auth.signOut();
+    }
+  }, []);
+
+  useEffect(() => {
+    // Persist the "forget" flag to localStorage on beforeunload so it survives browser close
+    const handleBeforeUnload = () => {
+      if (sessionStorage.getItem('forget-on-close') === 'true') {
+        localStorage.setItem('forget-session', 'true');
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -93,7 +113,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
+    // If "remember me" is unchecked, we'll clear the session on browser close
+    if (!rememberMe) {
+      // Store flag so we can clear session storage on next load if needed
+      sessionStorage.setItem('forget-on-close', 'true');
+    } else {
+      sessionStorage.removeItem('forget-on-close');
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
