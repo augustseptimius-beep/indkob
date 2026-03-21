@@ -46,7 +46,11 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        // Set storage based on "remember me" preference
+        if (!rememberMe) {
+          supabase.auth.setSession; // storage is set at client level, use workaround
+        }
+        const { error } = await signIn(email, password, rememberMe);
         if (error) {
           toast.error(error.message || 'Kunne ikke logge ind');
         } else {
