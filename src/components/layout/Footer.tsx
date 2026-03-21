@@ -7,10 +7,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-serif font-bold text-sm">KIF</span>
-              </div>
+            <div className="mb-4">
               <span className="font-serif text-xl font-semibold">Klitmøllers Indkøbsfællesskab</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
