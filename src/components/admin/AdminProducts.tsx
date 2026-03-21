@@ -168,30 +168,33 @@ export function AdminProducts() {
         {filteredProducts.map((product) => (
           <Card key={product.id}>
             <CardContent className="p-4">
-              <div className="flex items-start gap-3 sm:gap-4">
-                {product.image_url && (
-                  <img
-                    src={product.image_url}
-                    alt={product.title}
-                    className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="font-semibold truncate">{product.title}</h3>
-                    {getStatusBadge(product.status)}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {product.current_quantity} / {product.target_quantity} {product.unit_name} • 
-                    {product.price_per_unit} kr. pr. {product.unit_name}
-                  </p>
-                  {product.category && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Kategori: {product.category.name}
-                    </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                  {product.image_url && (
+                    <img
+                      src={product.image_url}
+                      alt={product.title}
+                      className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
+                    />
                   )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex min-w-0 items-start gap-2 mb-1 flex-wrap">
+                      <h3 className="min-w-0 flex-1 truncate font-semibold">{product.title}</h3>
+                      <div className="shrink-0">
+                        {getStatusBadge(product.status)}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground break-words">
+                      {product.current_quantity} / {product.target_quantity} {product.unit_name} • {product.price_per_unit} kr. pr. {product.unit_name}
+                    </p>
+                    {product.category && (
+                      <p className="text-xs text-muted-foreground mt-1 break-words">
+                        Kategori: {product.category.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <div className="flex items-center justify-end gap-1 sm:gap-2 sm:flex-shrink-0">
                   <Button
                     variant="outline"
                     size="icon"
