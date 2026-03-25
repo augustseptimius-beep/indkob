@@ -52,7 +52,7 @@ const productSchema = z.object({
   target_quantity: z.coerce.number().int().positive('Mål-mængde skal være positiv'),
   minimum_purchase: z.coerce.number().int().positive('Minimum køb skal være positiv'),
   supplier_name: z.string().optional(),
-  status: z.enum(['open', 'ordered', 'arrived']),
+  status: z.enum(['open', 'ordered']),
   is_organic: z.boolean(),
   notify_threshold: z.coerce.number().int().min(0, 'Skal være 0 eller højere'),
 });
@@ -565,7 +565,6 @@ export function ProductFormDialog({
                           <SelectContent>
                             <SelectItem value="open">Åben</SelectItem>
                             <SelectItem value="ordered">Bestilt</SelectItem>
-                            <SelectItem value="arrived">Ankommet</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

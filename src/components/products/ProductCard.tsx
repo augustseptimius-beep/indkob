@@ -23,8 +23,6 @@ export function ProductCard({ product }: ProductCardProps) {
         return 'Åben';
       case 'ordered':
         return 'Bestilt hjem';
-      case 'arrived':
-        return 'Klar til afhentning';
       default:
         return status;
     }
@@ -37,8 +35,6 @@ export function ProductCard({ product }: ProductCardProps) {
         return 'bg-primary/10 text-primary';
       case 'ordered':
         return 'bg-warning/20 text-warning-foreground';
-      case 'arrived':
-        return 'bg-success/20 text-success';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -48,7 +44,6 @@ export function ProductCard({ product }: ProductCardProps) {
     if (product.status === 'open' && !isComplete) return 'Reserver din andel';
     if (isTargetReached) return 'Se detaljer';
     if (product.status === 'ordered') return 'Se status';
-    if (product.status === 'arrived') return 'Se afhentning';
     return 'Se mere';
   };
 

@@ -91,12 +91,10 @@ export function AdminProducts() {
     const variants: Record<string, string> = {
       open: 'bg-primary/20 text-primary',
       ordered: 'bg-accent/20 text-accent-foreground',
-      arrived: 'bg-green-100 text-green-800',
     };
     const labels: Record<string, string> = {
       open: 'Åben',
       ordered: 'Bestilt',
-      arrived: 'Ankommet',
     };
     return (
       <Badge className={variants[status] || variants.open}>
@@ -147,7 +145,6 @@ export function AdminProducts() {
             <SelectItem value="all">Alle statusser</SelectItem>
             <SelectItem value="open">Åben</SelectItem>
             <SelectItem value="ordered">Bestilt</SelectItem>
-            <SelectItem value="arrived">Ankommet</SelectItem>
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>

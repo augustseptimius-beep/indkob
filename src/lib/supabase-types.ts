@@ -1,5 +1,5 @@
 // Extended types for our application
-export type ProductStatus = 'open' | 'ordered' | 'arrived';
+export type ProductStatus = 'open' | 'ordered';
 export type ReservationStatus = 'pending' | 'ordered' | 'ready' | 'completed';
 export type AppRole = 'admin' | 'member';
 
@@ -66,6 +66,7 @@ export interface Reservation {
   status: ReservationStatus;
   paid: boolean;
   paid_at: string | null;
+  batch_id: string | null;
   created_at: string;
   updated_at: string;
   product?: Product;
