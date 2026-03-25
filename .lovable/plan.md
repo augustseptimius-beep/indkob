@@ -1,34 +1,37 @@
 
 
-## Plan: Forbedret Brugeradministration
+## Oprydning: "Produkt ankommet" vs "Klar til afhentning"
 
-### Oversigt
-Opgraderer AdminUsers-komponenten med tre hovedelementer: bruger-vækst graf, søgefunktion, og mulighed for at slette brugere.
+### Problem
 
-### Hvad der bygges
+Du har ret — de to er funktionelt identiske. Her er hvad der er sket:
 
-**1. Statistik-kort og vækstgraf (recharts)**
-- Kort der viser: Totalt antal brugere, nye denne måned, antal admins
-- Linjegraf der viser bruger-tilgang over tid (baseret på `profiles.created_at`)
-- Data grupperes pr. uge/måned afhængig af antal brugere
+- **"Produkt ankommet"** (`product_arrived`) var den originale email, som blev trigget af en database-trigger når produktstatus ændredes til `arrived`. Men den trigger blev fjernet i en tidligere migration, så skabelonen er **død kode** — den bruges aldrig.
+- **"Klar til afhentning"** (`ready_for_pickup`) blev tilføjet senere og er den der **faktisk bruges**, når admin klikker "Marker som ankommet" i ordresektionen.
 
-**2. Søgning og filtrering**
-- Søgefelt der filtrerer på navn (client-side fra allerede hentet data)
-- Filter-mulighed for rolle (alle / admin / medlem)
-- Tabelvisning i stedet for kort-layout for bedre overblik ved mange brugere
+Begge gør det samme: sender email til reservatører om at produktet er ankommet og klar til betaling/afhentning.
 
-**3. Sletning af brugere**
-- Slet-knap pr. bruger med bekræftelsesdialog
-- Sletningen fjerner brugerens profil, reservationer, wishlist, roller og kommentarer via klient-side kaskade (samme mønster som DeleteAccountSection)
-- Auth-brugeren kan ikke slettes fra klienten (kræver service role), men alle public-data ryddes
-- Admin kan ikke slette sig selv
+### Plan
+
+1. **Slet `product_arrived` skabelonen** fra databasen — den trigges aldrig
+2. **Fjern den gamle `handleProductStatusEmail` "arrived"-gren** i edge-funktionen, da den kun kan nås via et legacy-format som intet i systemet kalder
+3. **Opdater `AdminEmailTemplates.tsx`** — fjern `product_status_arrived` fra trigger-type listen
+4. **Redeploy edge-funktionen** så oprydningen træder i kraft
 
 ### Tekniske detaljer
 
-**Filer der ændres:**
-- `src/components/admin/AdminUsers.tsx` - komplet omskrivning med de tre features
+**Database**: Slet rækken i `email_templates` hvor `key = 'product_arrived'`
 
-**Ingen databaseændringer** - alt data hentes fra eksisterende `profiles` og `user_roles` tabeller. Grafen beregnes client-side ud fra `created_at` timestamps.
+**Edge function** (`send-notification/index.ts`):
+- Fjern `"arrived"` fra `productNotificationSchema.notificationType` enum (behold kun `"ordered"`)
+- Fjern "arrived"-grenene i `handleProductStatusEmail` (reservation status update, payment note, fallback text for arrived)
+- Alternativt: behold funktionen men kun til `ordered`, da den stadig bruges til bestillingsnotifikationer
 
-**Afhængigheder** - bruger eksisterende `recharts`, `lucide-react`, shadcn-komponenter (Table, Input, Select, AlertDialog).
+**Frontend** (`AdminEmailTemplates.tsx`):
+- Fjern `{ value: 'product_status_arrived', label: 'Produkt ankommet (auto)' }` fra `TRIGGER_TYPES`
+
+**Frontend** (`AdminEmailLog.tsx`):
+- Fjern `arrived: 'Produkt ankommet'` fra notification type labels (behold `ready_for_pickup`)
+
+Resultatet er én klar skabelon ("Klar til afhentning") som admin kan redigere, og som trigges når admin markerer en batch som ankommet.
 
