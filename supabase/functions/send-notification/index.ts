@@ -45,9 +45,7 @@ interface EmailTemplate {
 // Input validation schemas
 const productNotificationSchema = z.object({
   productId: z.string().uuid("Invalid product ID format"),
-  notificationType: z.enum(["ordered", "arrived"], {
-    errorMap: () => ({ message: "Invalid notification type. Must be 'ordered' or 'arrived'" })
-  }),
+  notificationType: z.literal("ordered"),
   reservationIds: z.array(z.string().uuid()).optional(),
 });
 
