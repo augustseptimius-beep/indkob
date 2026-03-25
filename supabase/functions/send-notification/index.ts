@@ -93,6 +93,12 @@ const batchReservationSchema = z.object({
   userId: z.string().uuid("Invalid user ID format"),
 });
 
+const readyForPickupSchema = z.object({
+  type: z.literal("ready_for_pickup"),
+  productId: z.string().uuid("Invalid product ID format"),
+  reservationIds: z.array(z.string().uuid()).min(1),
+});
+
 // HMAC signature verification
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   try {
@@ -823,6 +829,118 @@ async function handleBatchReservationEmail(
   return { success: result.success, emailsSent: result.success ? 1 : 0 };
 }
 
+// Handle ready for pickup notification — admin marks batch as arrived
+async function handleReadyForPickupEmail(
+  supabase: SupabaseClient,
+  productId: string,
+  reservationIds: string[],
+  resendApiKey: string
+): Promise<{ success: boolean; emailsSent: number; emailsFailed: number }> {
+  const product = await getProduct(supabase, productId);
+  if (!product) {
+    return { success: false, emailsSent: 0, emailsFailed: 0 };
+  }
+
+  // Get MobilePay number from CMS
+  const { data: paymentInfo } = await supabase
+    .from("cms_content")
+    .select("content")
+    .eq("key", "payment_info")
+    .maybeSingle();
+  const mobilepayNumber = (paymentInfo as { content: string | null } | null)?.content || "xxx-xxxxx";
+
+  // Get the specific reservations
+  const { data: reservations, error } = await supabase
+    .from("reservations")
+    .select("*")
+    .in("id", reservationIds);
+
+  if (error || !reservations || reservations.length === 0) {
+    console.error("No reservations found:", error);
+    return { success: true, emailsSent: 0, emailsFailed: 0 };
+  }
+
+  const typedReservations = reservations as Reservation[];
+  const templateKey = "ready_for_pickup";
+  const emailTemplate = await getEmailTemplate(supabase, templateKey);
+
+  // Get user profiles
+  const userIds = [...new Set(typedReservations.map(r => r.user_id))];
+  const profileMap = new Map<string, { email: string | null; full_name: string | null }>();
+  for (const uid of userIds) {
+    const p = await getProfileWithEmail(supabase, uid);
+    if (p) profileMap.set(uid, p);
+  }
+
+  const eligible = typedReservations.filter(r => profileMap.get(r.user_id)?.email);
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < eligible.length; i++) {
+    if (i > 0) await new Promise(resolve => setTimeout(resolve, 600));
+
+    const reservation = eligible[i];
+    const profile = profileMap.get(reservation.user_id)!;
+    const userEmail = profile.email!;
+    const userName = profile.full_name || "Kære medlem";
+    const totalPrice = (reservation.quantity * product.price_per_unit).toFixed(2);
+
+    const variables: Record<string, string> = {
+      user_name: userName,
+      user_email: userEmail,
+      product_title: product.title,
+      quantity: reservation.quantity.toString(),
+      unit_name: product.unit_name,
+      price_per_unit: product.price_per_unit.toString(),
+      total_price: totalPrice,
+      mobilepay_number: mobilepayNumber,
+    };
+
+    let subject: string;
+    let bodyHtml: string;
+
+    if (emailTemplate) {
+      subject = replaceTemplateVariables(emailTemplate.subject, variables);
+      bodyHtml = replaceTemplateVariables(emailTemplate.body_html, variables);
+    } else {
+      subject = `📦 ${product.title} er klar til afhentning!`;
+      bodyHtml = `
+        <p>Hej ${userName},</p>
+        <p>Gode nyheder! <strong>${product.title}</strong> er ankommet og klar til afhentning.</p>
+        
+        <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0;">
+          <h3 style="margin-top: 0; color: #166534;">Din reservation:</h3>
+          <p><strong>Produkt:</strong> ${product.title}</p>
+          <p><strong>Antal:</strong> ${reservation.quantity} ${product.unit_name}</p>
+          <p><strong>Pris pr. enhed:</strong> ${product.price_per_unit} kr.</p>
+          <p><strong>Total:</strong> ${totalPrice} kr.</p>
+        </div>
+        
+        <p style="background-color: #fef3c7; padding: 16px; border-radius: 8px;">
+          <strong>💳 Betaling:</strong> Betal venligst via MobilePay til ${mobilepayNumber}. 
+          Husk at skrive dit navn i beskeden.
+        </p>
+        
+        <p>Se dine reservationer på <a href="https://indkob.lovable.app/min-side" style="color: #5c6b5a; font-weight: bold;">Min side</a>.</p>
+      `;
+    }
+
+    const result = await sendEmail([userEmail], subject, bodyHtml, resendApiKey, {
+      supabase, notificationType: "ready_for_pickup", templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
+    });
+    if (result.success) successCount++; else failCount++;
+  }
+
+  // Update reservation statuses to 'ready'
+  await supabase
+    .from("reservations")
+    .update({ status: "ready" })
+    .in("id", reservationIds);
+  console.log(`Updated ${reservationIds.length} reservations to ready`);
+
+  return { success: true, emailsSent: successCount, emailsFailed: failCount };
+}
+
 // Handle product status change (ordered/arrived) - original functionality
 async function handleProductStatusEmail(
   supabase: SupabaseClient,
@@ -1037,7 +1155,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
       console.log("HMAC signature verified successfully");
-    } else if (authHeader && parsedBody.type === "batch_reservation_confirmed") {
+    } else if (authHeader && (parsedBody.type === "batch_reservation_confirmed" || parsedBody.type === "ready_for_pickup")) {
       // For batch requests from frontend, verify JWT
       const token = authHeader.replace("Bearer ", "");
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -1163,6 +1281,32 @@ const handler = async (req: Request): Promise<Response> => {
         supabase,
         validation.data.batchId,
         validation.data.userId,
+        RESEND_API_KEY
+      );
+
+    } else if (parsedBody.type === "ready_for_pickup") {
+      const validation = readyForPickupSchema.safeParse(parsedBody);
+      if (!validation.success) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request parameters" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      // Verify admin role
+      if (authenticatedUserId) {
+        const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: authenticatedUserId, _role: "admin" });
+        if (!isAdmin) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden: admin role required" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      }
+      console.log(`Sending ready for pickup email for product ${validation.data.productId}`);
+      result = await handleReadyForPickupEmail(
+        supabase,
+        validation.data.productId,
+        validation.data.reservationIds,
         RESEND_API_KEY
       );
 

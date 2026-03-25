@@ -39,6 +39,7 @@ const notificationTypeLabels: Record<string, string> = {
   product_target_reached: 'Mål nået',
   ordered: 'Produkt bestilt',
   arrived: 'Produkt ankommet',
+  ready_for_pickup: 'Klar til afhentning',
 };
 
 export function AdminEmailLog() {
