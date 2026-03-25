@@ -264,6 +264,7 @@ async function sendEmail(
         errorMessage: errorText || null,
         productId: logCtx.productId,
         userId: logCtx.userId,
+        bodyHtml: fullHtml,
       });
     }
   }
