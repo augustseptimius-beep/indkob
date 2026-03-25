@@ -1043,7 +1043,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
       console.log("HMAC signature verified successfully");
-    } else if (authHeader && parsedBody.type === "batch_reservation_confirmed") {
+    } else if (authHeader && (parsedBody.type === "batch_reservation_confirmed" || parsedBody.type === "ready_for_pickup")) {
       // For batch requests from frontend, verify JWT
       const token = authHeader.replace("Bearer ", "");
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
