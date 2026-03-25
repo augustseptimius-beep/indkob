@@ -54,24 +54,36 @@ export function EmailLogDetailDialog({ log, open, onOpenChange, onResend, resend
   const typeLabel = notificationTypeLabels[log.notification_type] || log.notification_type;
 
   const handleDownloadPdf = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWidth = 210;
+    const pageHeight = 297;
     const margin = 20;
+    const contentWidth = pageWidth - margin * 2;
     let y = margin;
 
+    const checkPageBreak = (needed: number) => {
+      if (y + needed > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    // Header
     doc.setFontSize(18);
     doc.text('Email-dokumentation', margin, y);
-    y += 12;
+    y += 10;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(120);
     doc.text(`Genereret: ${format(new Date(), "d. MMMM yyyy 'kl.' HH:mm", { locale: da })}`, margin, y);
     doc.setTextColor(0);
-    y += 10;
+    y += 8;
 
     doc.setDrawColor(200);
-    doc.line(margin, y, 190, y);
-    y += 10;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
 
+    // Metadata fields
     const fields: [string, string][] = [
       ['Log-ID', log.id],
       ['Afsendt', formattedDate],
@@ -82,27 +94,62 @@ export function EmailLogDetailDialog({ log, open, onOpenChange, onResend, resend
     ];
 
     if (log.error_message) fields.push(['Fejlbesked', log.error_message]);
-    if (log.template_key) fields.push(['Skabelon-noegle', log.template_key]);
+    if (log.template_key) fields.push(['Skabelon-nøgle', log.template_key]);
     if (log.product_id) fields.push(['Produkt-ID', log.product_id]);
     if (log.user_id) fields.push(['Bruger-ID', log.user_id]);
 
-    doc.setFontSize(11);
+    doc.setFontSize(10);
+    const labelColWidth = 42;
+    const valueColWidth = contentWidth - labelColWidth;
+
     for (const [label, value] of fields) {
+      const lines = doc.splitTextToSize(value, valueColWidth);
+      const blockHeight = lines.length * 5 + 2;
+      checkPageBreak(blockHeight);
+
       doc.setFont('helvetica', 'bold');
       doc.text(`${label}:`, margin, y);
       doc.setFont('helvetica', 'normal');
+      doc.text(lines, margin + labelColWidth, y);
+      y += blockHeight;
+    }
 
-      const labelWidth = doc.getTextWidth(`${label}: `);
-      const maxWidth = 170 - labelWidth;
-      const lines = doc.splitTextToSize(value, maxWidth);
-      doc.text(lines, margin + labelWidth, y);
-      y += lines.length * 6 + 4;
+    // Email body content
+    if (log.body_html) {
+      y += 4;
+      checkPageBreak(16);
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
 
-      if (y > 270) {
-        doc.addPage();
-        y = margin;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Email-indhold', margin, y);
+      doc.setFont('helvetica', 'normal');
+      y += 8;
+
+      // Strip HTML tags to plain text for PDF
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = DOMPurify.sanitize(log.body_html);
+      const plainText = (tempDiv.textContent || tempDiv.innerText || '').trim();
+
+      doc.setFontSize(9);
+      const bodyLines = doc.splitTextToSize(plainText, contentWidth);
+      const lineHeight = 4.5;
+
+      for (const line of bodyLines) {
+        checkPageBreak(lineHeight + 2);
+        doc.text(line, margin, y);
+        y += lineHeight;
       }
     }
+
+    // Footer on last page
+    const footerY = pageHeight - 10;
+    doc.setFontSize(8);
+    doc.setTextColor(160);
+    doc.text(`Email-dokumentation — ${log.id}`, margin, footerY);
+    doc.text(`Side ${doc.getNumberOfPages()}`, pageWidth - margin, footerY, { align: 'right' });
 
     doc.save(`email-dokumentation-${log.id.slice(0, 8)}.pdf`);
   };
