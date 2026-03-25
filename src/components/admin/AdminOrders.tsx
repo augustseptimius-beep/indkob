@@ -114,10 +114,36 @@ export function AdminOrders() {
     setUpdatingBatch(productId);
     try {
       const batch = orderedReservationsByProduct[productId] || [];
-      for (const reservation of batch) {
-        await updateReservation.mutateAsync({ id: reservation.id, status: 'ready' });
+      const reservationIds = batch.map(r => r.id);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Du skal være logget ind');
+        return;
       }
-      toast.success(`${batch.length} reservationer markeret som klar til afhentning`, { icon: <Package className="h-4 w-4" /> });
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-notification`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'ready_for_pickup',
+            productId,
+            reservationIds,
+          }),
+        }
+      );
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        toast.success(`${batch.length} reservationer markeret som klar til afhentning — emails sendt`, { icon: <Package className="h-4 w-4" /> });
+      } else {
+        toast.error(result.error || 'Kunne ikke sende notifikationer');
+      }
     } catch (error: any) {
       console.error('Error marking batch as arrived:', error);
       toast.error('Kunne ikke opdatere batch', { description: error.message });
