@@ -215,10 +215,6 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-
-            {product.status === 'arrived' && (
-              <Badge className="text-base px-4 py-2">Klar til afhentning</Badge>
-            )}
           </div>
         </div>
       </div>

@@ -565,7 +565,6 @@ export function ProductFormDialog({
                           <SelectContent>
                             <SelectItem value="open">Åben</SelectItem>
                             <SelectItem value="ordered">Bestilt</SelectItem>
-                            <SelectItem value="arrived">Ankommet</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

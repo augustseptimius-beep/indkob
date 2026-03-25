@@ -145,7 +145,6 @@ export function AdminProducts() {
             <SelectItem value="all">Alle statusser</SelectItem>
             <SelectItem value="open">Åben</SelectItem>
             <SelectItem value="ordered">Bestilt</SelectItem>
-            <SelectItem value="arrived">Ankommet</SelectItem>
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>

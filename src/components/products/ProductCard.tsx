@@ -44,7 +44,6 @@ export function ProductCard({ product }: ProductCardProps) {
     if (product.status === 'open' && !isComplete) return 'Reserver din andel';
     if (isTargetReached) return 'Se detaljer';
     if (product.status === 'ordered') return 'Se status';
-    if (product.status === 'arrived') return 'Se afhentning';
     return 'Se mere';
   };
 
