@@ -93,6 +93,12 @@ const batchReservationSchema = z.object({
   userId: z.string().uuid("Invalid user ID format"),
 });
 
+const readyForPickupSchema = z.object({
+  type: z.literal("ready_for_pickup"),
+  productId: z.string().uuid("Invalid product ID format"),
+  reservationIds: z.array(z.string().uuid()).min(1),
+});
+
 // HMAC signature verification
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   try {
