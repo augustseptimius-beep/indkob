@@ -53,6 +53,7 @@ export function AdminEmailLog() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
   const queryClient = useQueryClient();
 
   const { data: logs, isLoading } = useQuery({
