@@ -1284,6 +1284,32 @@ const handler = async (req: Request): Promise<Response> => {
         RESEND_API_KEY
       );
 
+    } else if (parsedBody.type === "ready_for_pickup") {
+      const validation = readyForPickupSchema.safeParse(parsedBody);
+      if (!validation.success) {
+        return new Response(
+          JSON.stringify({ error: "Invalid request parameters" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      // Verify admin role
+      if (authenticatedUserId) {
+        const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: authenticatedUserId, _role: "admin" });
+        if (!isAdmin) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden: admin role required" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+      }
+      console.log(`Sending ready for pickup email for product ${validation.data.productId}`);
+      result = await handleReadyForPickupEmail(
+        supabase,
+        validation.data.productId,
+        validation.data.reservationIds,
+        RESEND_API_KEY
+      );
+
     } else if (parsedBody.productId && parsedBody.notificationType) {
       // Legacy format for product status changes
       const validation = productNotificationSchema.safeParse(parsedBody);
