@@ -11,6 +11,7 @@ import { Search, ArrowUpDown, Mail, CheckCircle2, XCircle, RotateCcw, Loader2, C
 import { format } from 'date-fns';
 import { da } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { EmailLogDetailDialog } from './EmailLogDetailDialog';
 
 interface EmailLog {
   id: string;
