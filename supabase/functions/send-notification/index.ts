@@ -1275,11 +1275,10 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      console.log(`Sending ${validation.data.notificationType} notification for product ${validation.data.productId}`);
+      console.log(`Sending ordered notification for product ${validation.data.productId}`);
       result = await handleProductStatusEmail(
         supabase,
         validation.data.productId,
-        validation.data.notificationType,
         RESEND_API_KEY,
         validation.data.reservationIds
       );
