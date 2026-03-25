@@ -35,8 +35,6 @@ export function ProductCard({ product }: ProductCardProps) {
         return 'bg-primary/10 text-primary';
       case 'ordered':
         return 'bg-warning/20 text-warning-foreground';
-      case 'arrived':
-        return 'bg-success/20 text-success';
       default:
         return 'bg-muted text-muted-foreground';
     }
