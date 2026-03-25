@@ -66,6 +66,7 @@ export interface Reservation {
   status: ReservationStatus;
   paid: boolean;
   paid_at: string | null;
+  batch_id: string | null;
   created_at: string;
   updated_at: string;
   product?: Product;
