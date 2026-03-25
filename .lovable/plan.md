@@ -1,37 +1,51 @@
 
 
-## Oprydning: "Produkt ankommet" vs "Klar til afhentning"
+## Fejlfinding: E-mails og triggere — Fund og rettelser
 
-### Problem
+### Fundne problemer
 
-Du har ret — de to er funktionelt identiske. Her er hvad der er sket:
+**Problem 1 — KRITISK: Admin-tjek fejler i "Klar til afhentning"**
+Når admin klikker "Marker som ankommet" i ordresektionen, verificerer edge-funktionen admin-rollen via `has_role()`. Men `has_role()` tjekker `auth.uid()`, som er `null` når den kaldes fra edge-funktionens service-role klient. Resultatet er, at admin-tjekket **altid fejler med 403 Forbidden** fra admin UI'et. Emails der blev sendt tidligere virkede kun fordi de brugte HMAC-signatur (script), som springer admin-tjekket over.
 
-- **"Produkt ankommet"** (`product_arrived`) var den originale email, som blev trigget af en database-trigger når produktstatus ændredes til `arrived`. Men den trigger blev fjernet i en tidligere migration, så skabelonen er **død kode** — den bruges aldrig.
-- **"Klar til afhentning"** (`ready_for_pickup`) blev tilføjet senere og er den der **faktisk bruges**, når admin klikker "Marker som ankommet" i ordresektionen.
+**Problem 2 — Manglende labels i email-loggen**
+`AdminEmailLog.tsx` mangler danske labels for flere notifikationstyper:
+- `payment_confirmed` → "Betaling bekræftet"
+- `product_almost_reached` → "Produkt næsten i mål"
+- `batch_reservation_confirmed` → "Batchreservation bekræftet"
 
-Begge gør det samme: sender email til reservatører om at produktet er ankommet og klar til betaling/afhentning.
+Disse vises som rå engelske nøgler i loggen.
+
+**Problem 3 — Triggere eksisterer og virker**
+Alle 11 database-triggere er korrekt tilknyttet og aktive. Ingen manglende triggere.
+
+**Problem 4 — Email-skabeloner er i orden**
+9 aktive skabeloner, `product_arrived` er korrekt slettet. `ready_for_pickup` eksisterer og er aktiv.
 
 ### Plan
 
-1. **Slet `product_arrived` skabelonen** fra databasen — den trigges aldrig
-2. **Fjern den gamle `handleProductStatusEmail` "arrived"-gren** i edge-funktionen, da den kun kan nås via et legacy-format som intet i systemet kalder
-3. **Opdater `AdminEmailTemplates.tsx`** — fjern `product_status_arrived` fra trigger-type listen
-4. **Redeploy edge-funktionen** så oprydningen træder i kraft
+1. **Fix admin-tjek i edge-funktionen** — Erstat `supabase.rpc("has_role")` med en direkte query til `user_roles`-tabellen via service-role klienten. Dette virker fordi service-role klienten bypasser RLS.
+
+2. **Tilføj manglende labels i AdminEmailLog** — Tilføj de 3 manglende notifikationstype-labels.
+
+3. **Deploy edge-funktionen** — Så rettelsen træder i kraft.
 
 ### Tekniske detaljer
 
-**Database**: Slet rækken i `email_templates` hvor `key = 'product_arrived'`
+**Edge function** (`send-notification/index.ts`, linje 1251-1258):
+```typescript
+// FRA (fejler altid med service role):
+const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: authenticatedUserId, _role: "admin" });
 
-**Edge function** (`send-notification/index.ts`):
-- Fjern `"arrived"` fra `productNotificationSchema.notificationType` enum (behold kun `"ordered"`)
-- Fjern "arrived"-grenene i `handleProductStatusEmail` (reservation status update, payment note, fallback text for arrived)
-- Alternativt: behold funktionen men kun til `ordered`, da den stadig bruges til bestillingsnotifikationer
+// TIL (direkte query der virker med service role):
+const { data: adminRole } = await supabase
+  .from("user_roles")
+  .select("id")
+  .eq("user_id", authenticatedUserId)
+  .eq("role", "admin")
+  .maybeSingle();
+if (!adminRole) { return 403 }
+```
 
-**Frontend** (`AdminEmailTemplates.tsx`):
-- Fjern `{ value: 'product_status_arrived', label: 'Produkt ankommet (auto)' }` fra `TRIGGER_TYPES`
-
-**Frontend** (`AdminEmailLog.tsx`):
-- Fjern `arrived: 'Produkt ankommet'` fra notification type labels (behold `ready_for_pickup`)
-
-Resultatet er én klar skabelon ("Klar til afhentning") som admin kan redigere, og som trigges når admin markerer en batch som ankommet.
+**AdminEmailLog.tsx** (linje 34-42):
+Tilføj labels: `payment_confirmed`, `product_almost_reached`, `batch_reservation_confirmed`
 
