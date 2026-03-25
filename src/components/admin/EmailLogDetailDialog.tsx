@@ -1,11 +1,11 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Download, RotateCcw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { da } from 'date-fns/locale';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 
 interface EmailLog {
   id: string;
