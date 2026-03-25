@@ -184,6 +184,7 @@ async function logEmail(
     errorMessage?: string | null;
     productId?: string | null;
     userId?: string | null;
+    bodyHtml?: string | null;
   }
 ): Promise<void> {
   try {
@@ -197,6 +198,7 @@ async function logEmail(
       error_message: params.errorMessage || null,
       product_id: params.productId || null,
       user_id: params.userId || null,
+      body_html: params.bodyHtml || null,
     });
   } catch (err) {
     console.error("Failed to log email:", err);
