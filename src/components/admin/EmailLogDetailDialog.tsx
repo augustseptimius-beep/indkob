@@ -117,6 +117,7 @@ export function EmailLogDetailDialog({ log, open, onOpenChange, onResend, resend
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base">Email-detaljer</DialogTitle>
+          <DialogDescription>Detaljeret visning af afsendt email med metadata til dokumentation.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-1">
