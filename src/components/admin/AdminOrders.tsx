@@ -208,53 +208,70 @@ export function AdminOrders() {
         </CardContent>
       </Card>
 
-      {/* Pending Payments Section */}
-      {unpaidReservations.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-amber-600" />
-            Afventende betalinger ({unpaidReservations.length})
-          </h2>
-          <div className="grid gap-4">
-            {unpaidReservations.map((reservation) => {
-              const product = getProductById(reservation.product_id);
-              const totalPrice = (product?.price_per_unit || 0) * reservation.quantity;
-              const userName = getUserDisplay(reservation.user_id);
-              
-              return (
-                <Card key={reservation.id} className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+      {/* Pending Payments Section — grouped by product */}
+      {unpaidReservations.length > 0 && (() => {
+        const grouped: Record<string, typeof unpaidReservations> = {};
+        unpaidReservations.forEach(r => {
+          if (!grouped[r.product_id]) grouped[r.product_id] = [];
+          grouped[r.product_id].push(r);
+        });
+
+        return (
+          <section>
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-amber-600" />
+              Afventende betalinger ({unpaidReservations.length})
+            </h2>
+            <div className="grid gap-4">
+              {Object.entries(grouped).map(([productId, reservations]) => {
+                const product = getProductById(productId);
+                const totalQty = reservations.reduce((s, r) => s + r.quantity, 0);
+                const totalAmount = reservations.reduce((s, r) => s + (product?.price_per_unit || 0) * r.quantity, 0);
+
+                return (
+                  <Card key={productId} className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
                         {product?.image_url && (
-                          <img src={product.image_url} alt={product.title} className="w-12 h-12 object-cover rounded-lg flex-shrink-0" />
+                          <img src={product.image_url} alt={product.title} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
                         )}
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h3 className="font-semibold truncate">{product?.title}</h3>
-                            <Badge variant="outline" className="text-xs">{reservation.quantity} {product?.unit_name}</Badge>
-                          </div>
-                          <p className="text-sm font-medium">{userName}</p>
-                          <p className="text-sm text-muted-foreground mt-0.5">{totalPrice.toFixed(2)} kr</p>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-sm truncate">{product?.title}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {reservations.length} ubetalt{reservations.length !== 1 ? 'e' : ''} — {totalQty} {product?.unit_name} — {totalAmount.toFixed(2)} kr
+                          </p>
                         </div>
                       </div>
-                      <Button
-                        onClick={() => markReservationAsPaid(reservation.id)}
-                        disabled={markingPaid === reservation.id}
-                        size="sm"
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        {markingPaid === reservation.id ? 'Markerer...' : 'Marker betalt'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                      <div className="divide-y divide-amber-200 dark:divide-amber-800">
+                        {reservations.map(r => {
+                          const price = (product?.price_per_unit || 0) * r.quantity;
+                          return (
+                            <div key={r.id} className="flex items-center justify-between gap-2 py-2">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-sm font-medium truncate block">{getUserDisplay(r.user_id)}</span>
+                                <span className="text-xs text-muted-foreground">{r.quantity} {product?.unit_name} — {price.toFixed(2)} kr</span>
+                              </div>
+                              <Button
+                                onClick={() => markReservationAsPaid(r.id)}
+                                disabled={markingPaid === r.id}
+                                size="sm"
+                                className="h-7 text-xs bg-green-600 hover:bg-green-700 shrink-0"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                {markingPaid === r.id ? '...' : 'Betalt'}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Ready to Order */}
       <section>
