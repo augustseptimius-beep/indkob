@@ -213,6 +213,7 @@ interface EmailContext {
   productId?: string | null;
   userId?: string | null;
   recipientName?: string | null;
+  bodyHtml?: string | null;
 }
 
 // Send email via Resend
