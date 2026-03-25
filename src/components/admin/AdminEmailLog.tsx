@@ -11,6 +11,7 @@ import { Search, ArrowUpDown, Mail, CheckCircle2, XCircle, RotateCcw, Loader2, C
 import { format } from 'date-fns';
 import { da } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { EmailLogDetailDialog } from './EmailLogDetailDialog';
 
 interface EmailLog {
   id: string;
@@ -52,6 +53,7 @@ export function AdminEmailLog() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
   const queryClient = useQueryClient();
 
   const { data: logs, isLoading } = useQuery({
@@ -232,7 +234,7 @@ export function AdminEmailLog() {
                 </TableHeader>
                 <TableBody>
                   {paginatedLogs.map(log => (
-                    <TableRow key={log.id}>
+                    <TableRow key={log.id} className="cursor-pointer" onClick={() => setSelectedLog(log)}>
                       <TableCell className="whitespace-nowrap text-sm">
                         {format(new Date(log.created_at), 'dd. MMM yyyy HH:mm', { locale: da })}
                       </TableCell>
@@ -269,7 +271,7 @@ export function AdminEmailLog() {
                             className="h-8 w-8"
                             title="Gensend email"
                             disabled={resendingId === log.id}
-                            onClick={() => handleResend(log.id)}
+                            onClick={(e) => { e.stopPropagation(); handleResend(log.id); }}
                           >
                             {resendingId === log.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -319,6 +321,14 @@ export function AdminEmailLog() {
           </>
         )}
       </CardContent>
+
+      <EmailLogDetailDialog
+        log={selectedLog}
+        open={!!selectedLog}
+        onOpenChange={(open) => { if (!open) setSelectedLog(null); }}
+        onResend={handleResend}
+        resending={resendingId === selectedLog?.id}
+      />
     </Card>
   );
 }
