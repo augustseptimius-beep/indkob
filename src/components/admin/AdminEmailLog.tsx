@@ -25,6 +25,7 @@ interface EmailLog {
   product_id: string | null;
   user_id: string | null;
   created_at: string;
+  body_html: string | null;
 }
 
 type SortField = 'created_at' | 'recipient_email' | 'notification_type' | 'status';
