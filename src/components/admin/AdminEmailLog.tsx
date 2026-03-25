@@ -271,7 +271,7 @@ export function AdminEmailLog() {
                             className="h-8 w-8"
                             title="Gensend email"
                             disabled={resendingId === log.id}
-                            onClick={() => handleResend(log.id)}
+                            onClick={(e) => { e.stopPropagation(); handleResend(log.id); }}
                           >
                             {resendingId === log.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
