@@ -321,6 +321,14 @@ export function AdminEmailLog() {
           </>
         )}
       </CardContent>
+
+      <EmailLogDetailDialog
+        log={selectedLog}
+        open={!!selectedLog}
+        onOpenChange={(open) => { if (!open) setSelectedLog(null); }}
+        onResend={handleResend}
+        resending={resendingId === selectedLog?.id}
+      />
     </Card>
   );
 }
