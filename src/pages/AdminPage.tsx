@@ -179,6 +179,7 @@ export default function AdminPage() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'dashboard': return <AdminDashboard />;
       case 'products': return <AdminProducts />;
       case 'categories': return <AdminCategories />;
       case 'orders': return <AdminOrders />;
