@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const navItems = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'products', label: 'Produkter', icon: Package },
   { key: 'categories', label: 'Kategorier', icon: FolderOpen },
   { key: 'orders', label: 'Ordrer', icon: ClipboardList, badgeKey: 'unpaid' as const },
