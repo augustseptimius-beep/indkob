@@ -58,6 +58,7 @@ export type Database = {
       }
       email_logs: {
         Row: {
+          body_html: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -71,6 +72,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          body_html?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -84,6 +86,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          body_html?: string | null
           created_at?: string
           error_message?: string | null
           id?: string

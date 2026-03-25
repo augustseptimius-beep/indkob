@@ -2,10 +2,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Download, RotateCcw, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Download, RotateCcw, Loader2, CheckCircle2, XCircle, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { da } from 'date-fns/locale';
 import { jsPDF } from 'jspdf';
+import { useState } from 'react';
+import DOMPurify from 'dompurify';
 
 interface EmailLog {
   id: string;
@@ -19,6 +21,7 @@ interface EmailLog {
   product_id: string | null;
   user_id: string | null;
   created_at: string;
+  body_html: string | null;
 }
 
 const notificationTypeLabels: Record<string, string> = {
@@ -43,6 +46,8 @@ interface EmailLogDetailDialogProps {
 }
 
 export function EmailLogDetailDialog({ log, open, onOpenChange, onResend, resending }: EmailLogDetailDialogProps) {
+  const [showBody, setShowBody] = useState(true);
+
   if (!log) return null;
 
   const formattedDate = format(new Date(log.created_at), "d. MMMM yyyy 'kl.' HH:mm:ss", { locale: da });
@@ -77,7 +82,7 @@ export function EmailLogDetailDialog({ log, open, onOpenChange, onResend, resend
     ];
 
     if (log.error_message) fields.push(['Fejlbesked', log.error_message]);
-    if (log.template_key) fields.push(['Skabelon-nøgle', log.template_key]);
+    if (log.template_key) fields.push(['Skabelon-noegle', log.template_key]);
     if (log.product_id) fields.push(['Produkt-ID', log.product_id]);
     if (log.user_id) fields.push(['Bruger-ID', log.user_id]);
 
@@ -114,7 +119,7 @@ export function EmailLogDetailDialog({ log, open, onOpenChange, onResend, resend
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base">Email-detaljer</DialogTitle>
           <DialogDescription>Detaljeret visning af afsendt email med metadata til dokumentation.</DialogDescription>
@@ -158,6 +163,33 @@ export function EmailLogDetailDialog({ log, open, onOpenChange, onResend, resend
           <DetailRow label="Bruger-ID" value={log.user_id} />
           <DetailRow label="Log-ID" value={log.id} />
         </div>
+
+        {/* Email body preview */}
+        {log.body_html ? (
+          <div className="space-y-2">
+            <Separator />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Email-indhold</span>
+              <Button variant="ghost" size="sm" onClick={() => setShowBody(!showBody)}>
+                {showBody ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+                {showBody ? 'Skjul' : 'Vis'}
+              </Button>
+            </div>
+            {showBody && (
+              <div
+                className="rounded-md border bg-white p-4 max-h-[400px] overflow-y-auto"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(log.body_html) }}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Separator />
+            <p className="text-sm text-muted-foreground italic">
+              Email-indhold er ikke tilgængeligt for denne log-post. Fremtidige emails vil automatisk gemme indholdet.
+            </p>
+          </div>
+        )}
 
         <DialogFooter className="flex-row gap-2 sm:gap-2">
           <Button variant="outline" onClick={handleDownloadPdf} className="flex-1">
