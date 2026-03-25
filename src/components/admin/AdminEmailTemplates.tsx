@@ -42,7 +42,6 @@ import {
 
 const TRIGGER_TYPES = [
   { value: 'product_status_ordered', label: 'Produkt bestilt (auto)' },
-  { value: 'product_status_arrived', label: 'Produkt ankommet (auto)' },
   { value: 'payment_confirmed', label: 'Betaling bekræftet (auto)' },
   { value: 'automatic', label: 'Automatisk' },
   { value: 'manual', label: 'Manuel udsendelse' },
