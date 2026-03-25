@@ -37,8 +37,11 @@ const notificationTypeLabels: Record<string, string> = {
   reservation_cancelled: 'Reservation annulleret',
   new_product: 'Nyt produkt',
   product_target_reached: 'Mål nået',
+  product_almost_reached: 'Produkt næsten i mål',
   ordered: 'Produkt bestilt',
   ready_for_pickup: 'Klar til afhentning',
+  payment_confirmed: 'Betaling bekræftet',
+  batch_reservation_confirmed: 'Batchreservation bekræftet',
 };
 
 export function AdminEmailLog() {
