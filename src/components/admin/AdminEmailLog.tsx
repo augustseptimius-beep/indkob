@@ -234,7 +234,7 @@ export function AdminEmailLog() {
                 </TableHeader>
                 <TableBody>
                   {paginatedLogs.map(log => (
-                    <TableRow key={log.id}>
+                    <TableRow key={log.id} className="cursor-pointer" onClick={() => setSelectedLog(log)}>
                       <TableCell className="whitespace-nowrap text-sm">
                         {format(new Date(log.created_at), 'dd. MMM yyyy HH:mm', { locale: da })}
                       </TableCell>
