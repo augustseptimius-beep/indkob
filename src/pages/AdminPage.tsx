@@ -36,7 +36,7 @@ const navItems = [
 
 export default function AdminPage() {
   const { user, isAdmin, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [isSyncing, setIsSyncing] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
