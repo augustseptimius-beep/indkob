@@ -23,8 +23,6 @@ export function ProductCard({ product }: ProductCardProps) {
         return 'Åben';
       case 'ordered':
         return 'Bestilt hjem';
-      case 'arrived':
-        return 'Klar til afhentning';
       default:
         return status;
     }
