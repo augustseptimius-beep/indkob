@@ -939,11 +939,10 @@ async function handleReadyForPickupEmail(
   return { success: true, emailsSent: successCount, emailsFailed: failCount };
 }
 
-// Handle product status change (ordered/arrived) - original functionality
+// Handle product status change (ordered) - original functionality
 async function handleProductStatusEmail(
   supabase: SupabaseClient,
   productId: string,
-  notificationType: "ordered" | "arrived",
   resendApiKey: string,
   reservationIds?: string[]
 ): Promise<{ success: boolean; emailsSent: number; emailsFailed: number }> {
@@ -954,17 +953,8 @@ async function handleProductStatusEmail(
 
   console.log(`Product found: ${product.title}`);
 
-  const templateKey = notificationType === "ordered" ? "product_ordered" : "product_arrived";
+  const templateKey = "product_ordered";
   const emailTemplate = await getEmailTemplate(supabase, templateKey);
-
-  // Get MobilePay number from CMS
-  const { data: paymentInfo } = await supabase
-    .from("cms_content")
-    .select("content")
-    .eq("key", "payment_info")
-    .maybeSingle();
-  
-  const mobilepayNumber = (paymentInfo as { content: string | null } | null)?.content || "xxx-xxxxx";
 
   // Get reservations - only specific IDs if provided, otherwise all for this product
   let query = supabase
@@ -1032,8 +1022,6 @@ async function handleProductStatusEmail(
       unit_name: product.unit_name,
       price_per_unit: product.price_per_unit.toString(),
       total_price: totalPrice,
-      mobilepay_number: mobilepayNumber,
-      paid_at: new Date().toLocaleDateString('da-DK'),
     };
 
     let subject: string;
@@ -1043,24 +1031,11 @@ async function handleProductStatusEmail(
       subject = replaceTemplateVariables(emailTemplate.subject, variables);
       bodyHtml = replaceTemplateVariables(emailTemplate.body_html, variables);
     } else {
-      subject = notificationType === "ordered"
-        ? `🛒 ${product.title} er nu bestilt!`
-        : `📦 ${product.title} er kommet hjem!`;
-
-      const statusText = notificationType === "ordered"
-        ? "er nu bestilt hos leverandøren"
-        : "er ankommet og klar til afhentning";
-
-      const paymentNote = notificationType === "arrived"
-        ? `<p style="background-color: #fef3c7; padding: 16px; border-radius: 8px; margin-top: 20px;">
-            <strong>💳 Betaling:</strong> Betal venligst via MobilePay til ${mobilepayNumber}. 
-            Husk at skrive dit navn i beskeden.
-          </p>`
-        : "";
+      subject = `🛒 ${product.title} er nu bestilt!`;
 
       bodyHtml = `
         <p>Hej ${userName},</p>
-        <p>Vi vil gerne informere dig om, at <strong>${product.title}</strong> ${statusText}.</p>
+        <p>Vi vil gerne informere dig om, at <strong>${product.title}</strong> er nu bestilt hos leverandøren.</p>
         
         <div style="background-color: #f8f7f4; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Din reservation:</h3>
@@ -1069,14 +1044,12 @@ async function handleProductStatusEmail(
           <p><strong>Pris pr. enhed:</strong> ${product.price_per_unit} kr.</p>
           <p><strong>Total:</strong> ${totalPrice} kr.</p>
         </div>
-        
-        ${paymentNote}
       `;
     }
 
     console.log(`Sending email to ${userEmail}`);
     const result = await sendEmail([userEmail], subject, bodyHtml, resendApiKey, {
-      supabase, notificationType, templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
+      supabase, notificationType: "ordered", templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
     });
     
     if (result.success) {
@@ -1084,22 +1057,6 @@ async function handleProductStatusEmail(
     } else {
       failCount++;
     }
-  }
-
-  // Update reservation statuses (only for arrived, since ordered is handled by DB trigger)
-  if (notificationType === "arrived") {
-    let statusQuery = supabase
-      .from("reservations")
-      .update({ status: "ready" })
-      .eq("product_id", productId)
-      .eq("status", "ordered");
-    
-    if (reservationIds && reservationIds.length > 0) {
-      statusQuery = statusQuery.in("id", reservationIds);
-    }
-    
-    await statusQuery;
-    console.log(`Updated reservation statuses to ready`);
   }
 
   return { success: true, emailsSent: successCount, emailsFailed: failCount };
