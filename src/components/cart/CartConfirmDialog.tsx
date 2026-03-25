@@ -52,7 +52,14 @@ export function CartConfirmDialog({ open, onOpenChange, items }: CartConfirmDial
             <span>Total</span>
             <span>{total.toFixed(2)} kr</span>
           </div>
-        </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/50 p-3">
+            <Mail className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Du modtager en bekræftelse på mail. Tjek din spam-mappe, hvis du ikke kan finde den i din indbakke.
+            </p>
+          </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           <Button
