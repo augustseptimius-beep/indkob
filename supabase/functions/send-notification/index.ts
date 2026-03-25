@@ -1247,10 +1247,15 @@ const handler = async (req: Request): Promise<Response> => {
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      // Verify admin role
+      // Verify admin role via direct query (has_role RPC fails with service-role client)
       if (authenticatedUserId) {
-        const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: authenticatedUserId, _role: "admin" });
-        if (!isAdmin) {
+        const { data: adminRole } = await supabase
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", authenticatedUserId)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (!adminRole) {
           return new Response(
             JSON.stringify({ error: "Forbidden: admin role required" }),
             { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
