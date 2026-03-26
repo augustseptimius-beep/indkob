@@ -13,6 +13,7 @@ const corsHeaders = {
 interface Profile {
   user_id: string;
   full_name: string | null;
+  phone: string | null;
 }
 
 interface Product {
@@ -272,6 +273,63 @@ async function sendEmail(
   return { success: res.ok, error: errorText };
 }
 
+// Send SMS via Twilio gateway
+async function sendSms(
+  to: string,
+  body: string,
+): Promise<{ success: boolean; error?: string }> {
+  const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
+  const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER");
+
+  if (!LOVABLE_API_KEY || !TWILIO_API_KEY || !TWILIO_FROM) {
+    console.log("SMS not configured — skipping", {
+      hasLovable: !!LOVABLE_API_KEY,
+      hasTwilio: !!TWILIO_API_KEY,
+      hasFrom: !!TWILIO_FROM,
+    });
+    return { success: false, error: "SMS not configured" };
+  }
+
+  // Normalize phone: ensure E.164 format
+  let normalizedPhone = to.replace(/\s+/g, "");
+  if (!normalizedPhone.startsWith("+")) {
+    // Assume Danish if no country code
+    normalizedPhone = "+45" + normalizedPhone.replace(/^0+/, "");
+  }
+
+  try {
+    const response = await fetch(`${GATEWAY_URL}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "X-Connection-Api-Key": TWILIO_API_KEY,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        To: normalizedPhone,
+        From: TWILIO_FROM,
+        Body: body,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      const errMsg = `Twilio API error [${response.status}]: ${JSON.stringify(data)}`;
+      console.error(errMsg);
+      return { success: false, error: errMsg };
+    }
+
+    console.log(`SMS sent to ${normalizedPhone}, SID: ${data.sid}`);
+    return { success: true };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Unknown SMS error";
+    console.error("SMS send error:", msg);
+    return { success: false, error: msg };
+  }
+}
+
 // Get email template from database
 async function getEmailTemplate(
   supabase: SupabaseClient,
@@ -295,7 +353,7 @@ async function getEmailTemplate(
 async function getProfileWithEmail(
   supabase: SupabaseClient,
   userId: string
-): Promise<{ email: string | null; full_name: string | null } | null> {
+): Promise<{ email: string | null; full_name: string | null; phone: string | null } | null> {
   // Get email from auth.users (secure, not stored in public table)
   const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
   if (authError || !authUser?.user) {
@@ -303,10 +361,10 @@ async function getProfileWithEmail(
     return null;
   }
 
-  // Get full_name from profiles
+  // Get full_name and phone from profiles
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, phone")
     .eq("user_id", userId)
     .single();
 
@@ -317,6 +375,7 @@ async function getProfileWithEmail(
   return {
     email: authUser.user.email || null,
     full_name: data?.full_name || null,
+    phone: data?.phone || null,
   };
 }
 
@@ -931,6 +990,18 @@ async function handleReadyForPickupEmail(
       supabase, notificationType: "ready_for_pickup", templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
     });
     if (result.success) successCount++; else failCount++;
+
+    // Send SMS notification if user has a phone number
+    const userPhone = profile.phone;
+    if (userPhone) {
+      const smsBody = `Hej ${userName}! ${product.title} er klar til afhentning. Antal: ${reservation.quantity} ${product.unit_name}. Total: ${totalPrice} kr. Betal via MobilePay til ${mobilepayNumber}. Se mere på indkob.lovable.app/min-side`;
+      const smsResult = await sendSms(userPhone, smsBody);
+      if (smsResult.success) {
+        console.log(`SMS sent to ${reservation.user_id}`);
+      } else {
+        console.log(`SMS failed for ${reservation.user_id}: ${smsResult.error}`);
+      }
+    }
   }
 
   // Update reservation statuses to 'ready'
