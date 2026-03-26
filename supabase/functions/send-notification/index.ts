@@ -990,6 +990,18 @@ async function handleReadyForPickupEmail(
       supabase, notificationType: "ready_for_pickup", templateKey, productId: product.id, userId: reservation.user_id, recipientName: userName,
     });
     if (result.success) successCount++; else failCount++;
+
+    // Send SMS notification if user has a phone number
+    const userPhone = profile.phone;
+    if (userPhone) {
+      const smsBody = `Hej ${userName}! ${product.title} er klar til afhentning. Antal: ${reservation.quantity} ${product.unit_name}. Total: ${totalPrice} kr. Betal via MobilePay til ${mobilepayNumber}. Se mere på indkob.lovable.app/min-side`;
+      const smsResult = await sendSms(userPhone, smsBody);
+      if (smsResult.success) {
+        console.log(`SMS sent to ${reservation.user_id}`);
+      } else {
+        console.log(`SMS failed for ${reservation.user_id}: ${smsResult.error}`);
+      }
+    }
   }
 
   // Update reservation statuses to 'ready'
