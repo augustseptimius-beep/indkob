@@ -13,6 +13,7 @@ const corsHeaders = {
 interface Profile {
   user_id: string;
   full_name: string | null;
+  phone: string | null;
 }
 
 interface Product {
