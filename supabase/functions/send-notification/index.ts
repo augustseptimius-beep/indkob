@@ -296,7 +296,7 @@ async function getEmailTemplate(
 async function getProfileWithEmail(
   supabase: SupabaseClient,
   userId: string
-): Promise<{ email: string | null; full_name: string | null } | null> {
+): Promise<{ email: string | null; full_name: string | null; phone: string | null } | null> {
   // Get email from auth.users (secure, not stored in public table)
   const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
   if (authError || !authUser?.user) {
@@ -304,10 +304,10 @@ async function getProfileWithEmail(
     return null;
   }
 
-  // Get full_name from profiles
+  // Get full_name and phone from profiles
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, phone")
     .eq("user_id", userId)
     .single();
 
@@ -318,6 +318,7 @@ async function getProfileWithEmail(
   return {
     email: authUser.user.email || null,
     full_name: data?.full_name || null,
+    phone: data?.phone || null,
   };
 }
 
