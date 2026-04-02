@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -120,6 +121,7 @@ export default function MyPage() {
 
   return (
     <Layout>
+      <SEO title="Min side" noindex />
       <div className="container-narrow py-12">
         <div className="flex items-center justify-between mb-8">
           <div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -64,8 +65,42 @@ export default function ProductDetailPage() {
   const isComplete = remaining <= 0;
   const isAlmostComplete = !isComplete && remaining <= product.notify_threshold * product.minimum_purchase;
 
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description || undefined,
+    image: product.image_url || undefined,
+    offers: {
+      '@type': 'Offer',
+      price: product.price_per_unit,
+      priceCurrency: 'DKK',
+      availability: isComplete
+        ? 'https://schema.org/SoldOut'
+        : 'https://schema.org/InStock',
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Forside', item: 'https://indkob.lovable.app/' },
+      { '@type': 'ListItem', position: 2, name: 'Produkter', item: 'https://indkob.lovable.app/produkter' },
+      { '@type': 'ListItem', position: 3, name: product.title },
+    ],
+  };
+
   return (
     <Layout>
+      <SEO
+        title={product.title}
+        description={product.description || `${product.title} — ${product.price_per_unit.toFixed(2)} kr/${product.unit_name}. Køb sammen og spar.`}
+        image={product.image_url || undefined}
+        canonical={`/produkt/${product.id}`}
+        type="product"
+        jsonLd={[productJsonLd, breadcrumbJsonLd]}
+      />
       <div className="container-wide py-12">
         <Link to="/produkter" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8">
           <ArrowLeft className="w-4 h-4" />

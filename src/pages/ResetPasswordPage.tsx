@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -105,6 +106,7 @@ export default function ResetPasswordPage() {
 
   return (
     <Layout>
+      <SEO title="Nulstil adgangskode" noindex />
       <div className="container-narrow py-16 md:py-24">
         <div className="max-w-md mx-auto">
           <Card>

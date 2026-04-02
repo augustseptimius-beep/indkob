@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { CategoryFilter } from '@/components/products/CategoryFilter';
 import { useProducts, useCategories } from '@/hooks/useProducts';
@@ -62,6 +63,11 @@ export default function ProductsPage() {
 
   return (
     <Layout>
+      <SEO
+        title="Produkter"
+        description="Se alle aktive fællesindkøb og tilmeld dig de produkter du gerne vil have. Spar penge ved at købe sammen."
+        canonical="/produkter"
+      />
       <div className="container-wide py-12">
         <div className="mb-10">
           <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">Produkter</h1>

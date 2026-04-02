@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { Package, ClipboardList, FileText, Users, Key, Loader2, Mail, FolderOpen, ScrollText, History, Megaphone, Menu, LayoutDashboard } from 'lucide-react';
 import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminOrders } from '@/components/admin/AdminOrders';
@@ -197,6 +198,7 @@ export default function AdminPage() {
 
   return (
     <Layout>
+      <SEO title="Admin" noindex />
       <div className="flex min-h-[calc(100vh-4rem)]">
         {/* Desktop sidebar */}
         <aside className="hidden lg:flex w-56 shrink-0 border-r bg-card flex-col p-3">

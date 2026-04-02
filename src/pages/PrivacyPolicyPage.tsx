@@ -1,4 +1,5 @@
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { useCMSContent } from '@/hooks/useCMS';
 
 export default function PrivacyPolicyPage() {
@@ -23,6 +24,11 @@ export default function PrivacyPolicyPage() {
 
   return (
     <Layout>
+      <SEO
+        title="Privatlivspolitik"
+        description="Læs om hvordan Klitmøllers Indkøbsfællesskab behandler dine personoplysninger."
+        canonical="/privatlivspolitik"
+      />
       <div className="container-wide py-12">
         <div className="max-w-3xl mx-auto prose prose-neutral dark:prose-invert">
           <h1 className="font-serif text-3xl md:text-4xl font-bold mb-8">Privatlivspolitik</h1>
