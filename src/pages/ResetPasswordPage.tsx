@@ -106,6 +106,7 @@ export default function ResetPasswordPage() {
 
   return (
     <Layout>
+      <SEO title="Nulstil adgangskode" noindex />
       <div className="container-narrow py-16 md:py-24">
         <div className="max-w-md mx-auto">
           <Card>

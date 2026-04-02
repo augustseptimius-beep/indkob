@@ -198,6 +198,7 @@ export default function AdminPage() {
 
   return (
     <Layout>
+      <SEO title="Admin" noindex />
       <div className="flex min-h-[calc(100vh-4rem)]">
         {/* Desktop sidebar */}
         <aside className="hidden lg:flex w-56 shrink-0 border-r bg-card flex-col p-3">

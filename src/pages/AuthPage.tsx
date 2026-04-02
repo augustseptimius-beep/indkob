@@ -181,6 +181,7 @@ export default function AuthPage() {
 
   return (
     <Layout>
+      <SEO title={isLogin ? 'Log ind' : 'Bliv medlem'} noindex />
       <div className="container-narrow py-16 md:py-24">
         <div className="max-w-md mx-auto">
           <Card>

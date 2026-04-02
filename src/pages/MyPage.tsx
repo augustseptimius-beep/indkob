@@ -121,6 +121,7 @@ export default function MyPage() {
 
   return (
     <Layout>
+      <SEO title="Min side" noindex />
       <div className="container-narrow py-12">
         <div className="flex items-center justify-between mb-8">
           <div>
