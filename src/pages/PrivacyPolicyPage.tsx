@@ -1,4 +1,5 @@
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { useCMSContent } from '@/hooks/useCMS';
 
 export default function PrivacyPolicyPage() {
