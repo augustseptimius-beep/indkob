@@ -11,6 +11,7 @@ export default function AboutPage() {
         description="Klitmøllers Indkøbsfællesskab er et lokalt fællesskab, hvor beboere går sammen om at købe kvalitetsvarer i store partier."
         canonical="/om"
       />
+      <main className="container-wide py-12 md:py-20">
         <div className="max-w-3xl mx-auto">
           <h1 className="font-serif text-3xl md:text-4xl font-bold mb-6">
             Om Klitmøllers Indkøbsfællesskab

@@ -68,6 +68,7 @@ export default function ProductsPage() {
         description="Se alle aktive fællesindkøb og tilmeld dig de produkter du gerne vil have. Spar penge ved at købe sammen."
         canonical="/produkter"
       />
+      <div className="container-wide py-12">
         <div className="mb-10">
           <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">Produkter</h1>
           <p className="text-muted-foreground mb-6">
