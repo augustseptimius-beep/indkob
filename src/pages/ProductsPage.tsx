@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
+import { SEO } from '@/components/SEO';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { CategoryFilter } from '@/components/products/CategoryFilter';
 import { useProducts, useCategories } from '@/hooks/useProducts';
