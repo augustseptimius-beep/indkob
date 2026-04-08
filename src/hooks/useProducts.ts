@@ -221,6 +221,8 @@ export function useUpdateProduct() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['my-reservations'] });
     },
   });
 }
