@@ -1,11 +1,14 @@
 import { cn } from '@/lib/utils';
-import organicLabel from '@/assets/organic-label.jpg';
 
 interface OrganicBadgeProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
+/**
+ * Det danske økologi-mærke ("rødt Ø") gengivet som inline SVG.
+ * Erstatter en 25 KiB JPG → 0 ekstra HTTP-request og skarpt på alle DPI.
+ */
 export function OrganicBadge({ className, size = 'md' }: OrganicBadgeProps) {
   const sizeClasses = {
     sm: 'w-6 h-6',
@@ -14,11 +17,26 @@ export function OrganicBadge({ className, size = 'md' }: OrganicBadgeProps) {
   };
 
   return (
-    <img
-      src={organicLabel}
-      alt="Økologisk"
+    <span
+      role="img"
+      aria-label="Økologisk"
       title="Økologisk"
-      className={cn(sizeClasses[size], className)}
-    />
+      className={cn(
+        'inline-flex items-center justify-center rounded-full bg-[hsl(0_72%_42%)] text-white font-serif font-bold shadow-sm',
+        sizeClasses[size],
+        className,
+      )}
+    >
+      <span
+        className={cn(
+          'leading-none',
+          size === 'sm' && 'text-[0.85rem]',
+          size === 'md' && 'text-base',
+          size === 'lg' && 'text-2xl',
+        )}
+      >
+        Ø
+      </span>
+    </span>
   );
 }
