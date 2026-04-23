@@ -85,6 +85,7 @@ export function Header() {
                 <button
                   onClick={() => openCart(true)}
                   className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Åbn kurv"
                   title="Åbn kurv"
                 >
                   <ShoppingBag className="h-5 w-5" />
@@ -146,6 +147,7 @@ export function Header() {
             <button
               onClick={() => openCart(true)}
               className="relative p-2"
+              aria-label="Åbn kurv"
               title="Åbn kurv"
             >
               <ShoppingBag className="h-5 w-5" />
@@ -157,6 +159,8 @@ export function Header() {
             </button>
             <button
                 className="p-2"
+                aria-label={mobileMenuOpen ? 'Luk menu' : 'Åbn menu'}
+                aria-expanded={mobileMenuOpen}
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { Product } from '@/lib/supabase-types';
 import { MapPin, Package, ArrowRight } from 'lucide-react';
 import { OrganicBadge } from '@/components/OrganicBadge';
+import { optimizedImage, optimizedSrcSet } from '@/lib/image';
 
 interface ProductCardProps {
   product: Product;
@@ -54,8 +55,12 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="aspect-square relative overflow-hidden bg-white">
           {product.image_url ? (
             <img
-              src={product.image_url}
+              src={optimizedImage(product.image_url, 400) || product.image_url}
+              srcSet={optimizedSrcSet(product.image_url, [320, 480, 640])}
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 320px"
               alt={product.title}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
