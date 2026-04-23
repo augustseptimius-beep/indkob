@@ -1,22 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users, Package, Landmark } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 
 export function HeroSection() {
-  const { data: memberCount } = useQuery({
-    queryKey: ['member-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase.
-      from('profiles').
-      select('*', { count: 'exact', head: true });
-
-      if (error) throw error;
-      return count || 0;
-    }
-  });
-
   return <section className="relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/20" />
@@ -29,15 +15,6 @@ export function HeroSection() {
               <Users className="w-4 h-4 shrink-0" />
               <span className="text-sm font-medium">Lokalt fællesskab</span>
             </div>
-            {memberCount !== undefined && memberCount > 0 &&
-          <>
-                <span className="hidden sm:block w-px h-4 bg-primary/30" />
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 shrink-0" />
-                  <span className="text-sm font-semibold">{memberCount} medlemmer</span>
-                </div>
-              </>
-          }
           </div>
 
           {/* Title */}

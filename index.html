@@ -8,9 +8,6 @@
     <meta name="author" content="Klitmøllers Indkøbsfællesskab" />
     <link rel="icon" type="image/png" href="/favicon.png">
 
-    <link rel="preconnect" href="https://xekuhgwajypsblglrctp.supabase.co" crossorigin>
-    <link rel="dns-prefetch" href="https://xekuhgwajypsblglrctp.supabase.co">
-
     <style>
       /* Critical CSS — above-the-fold paint without waiting for main stylesheet */
       :root{--background:40 30% 98%;--foreground:220 20% 15%;--primary:150 25% 35%;}
@@ -18,6 +15,23 @@
       html,body{margin:0;padding:0}
       body{font-family:'DM Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:hsl(40 30% 98%);color:hsl(220 20% 15%);-webkit-font-smoothing:antialiased}
       h1,h2,h3,h4,h5,h6{font-family:'Playfair Display',Georgia,serif;font-weight:600;letter-spacing:-0.01em;margin:0}
+      /* Hero pre-render — matches HeroSection.tsx output so LCP paints before JS hydrates */
+      .hero-pre{position:relative;overflow:hidden}
+      .hero-pre__bg{position:absolute;inset:0;background:linear-gradient(135deg,hsl(150 25% 35% / 0.05),hsl(40 30% 98%) 50%,hsl(35 30% 92% / 0.4))}
+      .hero-pre__inner{position:relative;max-width:80rem;margin:0 auto;padding:5rem 1rem;text-align:center}
+      .hero-pre__content{max-width:48rem;margin:0 auto}
+      .hero-pre__badge{display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;border-radius:9999px;background:hsl(150 25% 35% / 0.1);color:hsl(150 25% 35%);font-size:0.875rem;font-weight:500;margin-bottom:2rem}
+      .hero-pre__title{font-size:2.25rem;line-height:1.1;font-weight:700;margin-bottom:1.5rem;color:hsl(220 20% 15%)}
+      .hero-pre__lead{font-size:1.25rem;color:hsl(220 10% 45%);margin-bottom:1rem}
+      .hero-pre__body{font-size:1.125rem;color:hsl(220 10% 45%);max-width:42rem;margin:0 auto 2.5rem}
+      @media (min-width:768px){
+        .hero-pre__inner{padding:8rem 1.5rem}
+        .hero-pre__title{font-size:3rem}
+        .hero-pre__lead{font-size:1.5rem}
+      }
+      @media (min-width:1024px){
+        .hero-pre__title{font-size:3.75rem}
+      }
     </style>
 
     <meta property="og:type" content="website" />
@@ -36,7 +50,7 @@
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root"><section class="hero-pre"><div class="hero-pre__bg"></div><div class="hero-pre__inner"><div class="hero-pre__content"><div class="hero-pre__badge">Lokalt fællesskab</div><h1 class="hero-pre__title">Klitmøllers Indkøbsfællesskab</h1><p class="hero-pre__lead">Fællesskab gennem fælles indkøb</p><p class="hero-pre__body">Hej Klitmøller - Vi er forsøg på et lokalt indkøbsfællesskab, hvor vi går sammen om at købe store partier af kvalitetsvarer til gode priser. Fællesskabet og platformen her er gratis i test-perioden, men virker som den skal.</p></div></div></section></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
