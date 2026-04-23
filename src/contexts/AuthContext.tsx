@@ -42,36 +42,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+    // Defer auth initialization until after first paint to keep LCP fast.
+    // The auth modules are heavy; running them post-paint reduces main-thread blocking.
+    let subscription: { unsubscribe: () => void } | null = null;
+    let cancelled = false;
+
+    const init = () => {
+      if (cancelled) return;
+      // Set up auth state listener FIRST
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
 
-        // Defer role check to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            checkAdminRole(session.user.id);
-          }, 0);
+          setTimeout(() => checkAdminRole(session.user.id), 0);
         } else {
           setIsAdmin(false);
         }
-      }
-    );
+      });
+      subscription = data.subscription;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
+      // THEN check for existing session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (cancelled) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+        if (session?.user) checkAdminRole(session.user.id);
+      });
+    };
 
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      }
-    });
+    const w = window as any;
+    const schedule = w.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1));
+    const handle = schedule(init, { timeout: 1500 });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      const cancel = w.cancelIdleCallback || clearTimeout;
+      cancel(handle);
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const checkAdminRole = async (userId: string) => {
