@@ -1,70 +1,48 @@
 
 
-## SEO-analyse: Klitmøllers Indkøbsfællesskab
+## Oprydningsplan — sikker, ikke-funktionel oprydning
 
-### Nuværende status
+Hele planen er **rent kosmetisk/intern**. Brugeroplevelsen ændres ikke, og **databasen røres ikke** (ingen migrationer, ingen ændringer i RLS, triggers, tabeller eller edge functions). Daglige drift-flows (reservationer, "Bestilt hjem", betalinger, afhentning, e-mails) berøres ikke.
 
-**Det der virker:**
-- OG-tags (title, description, image) i `index.html`
-- Twitter Card tags
-- `robots.txt` tillader alle crawlers
-- Semantisk HTML med korrekte headings (h1, h2, h3)
-- Meningsfulde link-tekster og alt-tekster på billeder
-- Dansk sprog i indholdet
+### Hvad jeg har fundet
 
-**Problemer fundet:**
+**1. Død kode (filer der ikke importeres nogen steder)**
+- `src/App.css` — gammel Vite-skabelonstil (logo-spin, `#root` max-width 1280px), bruges ikke. Ikke importeret nogen steder. Al styling kommer fra `index.css` + Tailwind.
+- `src/components/NavLink.tsx` — defineret men aldrig importeret. Alle navigationslinks bruger `react-router-dom` direkte.
+- `src/tailwind.config.lov.json` — ikke refereret nogen steder i koden eller build-konfigurationen.
+- `src/test/example.test.ts` — placeholder-test ("expect(true).toBe(true)"), ingen reel værdi.
 
-| # | Problem | Alvor |
-|---|---------|-------|
-| 1 | **Ingen per-side meta-tags** — alle sider deler samme title/description fra `index.html`. Google ser "Klitmøllers Indkøbsfællesskab" som title på ALLE sider. | Kritisk |
-| 2 | **Ingen sitemap.xml** — crawlers kan ikke opdage alle sider effektivt. | Høj |
-| 3 | **`<html lang="en">`** — sproget er sat til engelsk, men alt indhold er dansk. Skal være `lang="da"`. | Høj |
-| 4 | **Ingen canonical URLs** — risiko for duplikat-indhold-problemer. | Medium |
-| 5 | **Ingen struktureret data (JSON-LD)** — ingen Schema.org markup for Organisation, produkter eller BreadcrumbList. | Medium |
-| 6 | **Produktsider har ingen dynamisk OG/meta** — deling af et produkt på Facebook/LinkedIn viser generisk titel/billede i stedet for produktets. | Høj |
-| 7 | **Ingen 404-side meta** — NotFound-side mangler noindex. | Lav |
-| 8 | **Manglende heading-hierarki** — Layout har ingen skip-to-content link for tilgængelighed. | Lav |
+**2. Duplikeret fil (kan fjernes uden risiko)**
+- `src/components/ui/use-toast.ts` re-eksporterer kun `src/hooks/use-toast.ts`. Ingen filer importerer fra `@/components/ui/use-toast` (kun `@/hooks/use-toast` bruges). Filen er ren støj.
 
-### Forbedringsplan
+**3. Inkonsistent toast-system (kun forslag — ingen ændring i drift)**
+- Projektet bruger **både** shadcn-toast (`@/hooks/use-toast` med `<Toaster />` i `App.tsx`) **og** Sonner (`<Sonner />` i `App.tsx`). 4 filer bruger shadcn-varianten (AdminCategories, AdminPage, ProductImportDialog, ProductFormDialog), 18 filer bruger Sonner.
+- **Anbefaling: rør IKKE ved dette nu.** En migrering kræver at jeg ændrer toast-kald i 4 admin-filer, og det kan utilsigtet ændre præcis hvordan admin ser fejlbeskeder. Jeg noterer det som en fremtidig opgave i stedet.
 
-**1. Tilføj react-helmet-async til per-side meta-tags**
-- Installer `react-helmet-async`
-- Opret en `<SEO>` komponent med props: `title`, `description`, `image`, `canonical`, `noindex`
-- Tilføj `<SEO>` til hver side med unikke titler og beskrivelser:
-  - Forside: "Klitmøllers Indkøbsfællesskab — Fælles indkøb i Klitmøller"
-  - Produkter: "Produkter — Klitmøllers Indkøbsfællesskab"
-  - Produkt-detalje: "{Produktnavn} — Klitmøllers Indkøbsfællesskab" (dynamisk)
-  - Om os: "Om os — Klitmøllers Indkøbsfællesskab"
-  - Ønskeliste: "Ønskeliste — Klitmøllers Indkøbsfællesskab"
-  - Privatlivspolitik: "Privatlivspolitik — Klitmøllers Indkøbsfællesskab"
+**4. Defensive ubrugte UI-komponenter fra shadcn (rør IKKE)**
+- `aspect-ratio.tsx`, `carousel.tsx`, `chart.tsx`, `context-menu.tsx`, `drawer.tsx`, `hover-card.tsx`, `menubar.tsx`, `navigation-menu.tsx`, `resizable.tsx`, `input-otp.tsx` — flere bruges ikke aktivt. Men shadcn-komponenter er bibliotek-style og må gerne ligge der. Sletning kan bryde fremtidige tilføjelser uventet. **Lader dem være.**
 
-**2. Ret `<html lang="en">` til `lang="da"`**
-- Simpel ændring i `index.html`
+### Ændringer der udføres
 
-**3. Generer sitemap.xml**
-- Opret en statisk `public/sitemap.xml` med alle offentlige ruter
-- Tilføj reference i `robots.txt`
+| Fil | Handling | Risiko |
+|---|---|---|
+| `src/App.css` | Slet | Ingen — ikke importeret |
+| `src/components/NavLink.tsx` | Slet | Ingen — ikke importeret |
+| `src/tailwind.config.lov.json` | Slet | Ingen — ikke refereret |
+| `src/test/example.test.ts` | Slet | Ingen — placeholder |
+| `src/components/ui/use-toast.ts` | Slet | Ingen — kun re-eksport, intet importerer den |
 
-**4. Tilføj canonical URL til alle sider**
-- Via `<SEO>`-komponenten
+**Det er hele oprydningen.** 5 filer slettet, 0 linjer ændret i aktive komponenter, 0 database-ændringer, 0 ændringer i edge functions, 0 ændringer i pakker.
 
-**5. Tilføj JSON-LD struktureret data**
-- `Organization` schema på forsiden
-- `BreadcrumbList` på produkt- og undersider
-- `Product` schema på produktdetaljesider (med pris, tilgængelighed)
+### Hvad jeg eksplicit IKKE rører
 
-**6. Dynamisk OG-tags på produktsider**
-- Produkttitel som og:title, beskrivelse som og:description, produktbillede som og:image
+- Ingen `npm`/`bun` ændringer (ingen pakker fjernes — selvom `next-themes`, `vaul`, `embla-carousel-react` osv. har lille brug, kan en pakkeopdatering bryde build).
+- Ingen ændringer i `console.error`-kald — de er nyttige i produktion til debugging og påvirker ikke UX.
+- Ingen ændringer i `src/hooks/useReservationCount.ts` — bruges aktivt i ProductDetailPage.
+- Ingen ændringer i `OrganicBadge`, `SEO`, layout, hooks, contexts, edge functions eller migrations.
+- Ingen visuelle eller adfærdsmæssige ændringer.
 
-**7. Tilføj noindex til 404-side og login/min-side**
-- Sider bag login bør have noindex
+### Verifikation efter ændringen
 
-### Tekniske detaljer
+Efter sletning kører jeg en TypeScript-check (`tsc --noEmit` via vite build) for at bekræfte at intet brækker. Hvis noget uventet refererer en slettet fil, ruller jeg tilbage med det samme.
 
-Filer der oprettes/ændres:
-- `index.html` — ret `lang="da"`
-- `src/components/SEO.tsx` — ny komponent med react-helmet-async
-- `src/main.tsx` — wrap med `HelmetProvider`
-- Alle side-filer — tilføj `<SEO>` med unikke værdier
-- `public/sitemap.xml` — ny fil
-- `public/robots.txt` — tilføj sitemap-reference
