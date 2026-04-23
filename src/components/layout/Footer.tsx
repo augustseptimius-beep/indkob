@@ -17,7 +17,7 @@ export function Footer() {
 
           {/* Links */}
           <div>
-            <h4 className="font-serif font-semibold mb-4">Navigation</h4>
+            <h3 className="font-serif font-semibold mb-4 text-base">Navigation</h3>
             <nav className="flex flex-col gap-2">
               <Link to="/produkter" className="text-muted-foreground hover:text-foreground transition-colors text-sm">
                 Produkter
@@ -39,7 +39,7 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="font-serif font-semibold mb-4">Kontakt</h4>
+            <h3 className="font-serif font-semibold mb-4 text-base">Kontakt</h3>
             <p className="text-muted-foreground text-sm leading-relaxed">
               August Septimius Krogh<br />
               <a href="mailto:augustsk@etik.com" className="hover:text-foreground transition-colors">augustsk@etik.com</a><br />

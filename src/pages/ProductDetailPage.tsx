@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, ExternalLink, MapPin, Package, Minus, Plus, Users, AlertTriangle, ShoppingBag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrganicBadge } from '@/components/OrganicBadge';
+import { optimizedImage, optimizedSrcSet } from '@/lib/image';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,7 +112,15 @@ export default function ProductDetailPage() {
           {/* Image */}
           <div className="aspect-square rounded-2xl overflow-hidden bg-white">
             {product.image_url ? (
-              <img src={product.image_url} alt={product.title} className="w-full h-full object-contain" />
+              <img
+                src={optimizedImage(product.image_url, 800) || product.image_url}
+                srcSet={optimizedSrcSet(product.image_url, [480, 800, 1200])}
+                sizes="(max-width: 768px) 100vw, 600px"
+                alt={product.title}
+                fetchPriority="high"
+                decoding="async"
+                className="w-full h-full object-contain"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <Package className="w-24 h-24 text-muted-foreground/30" />

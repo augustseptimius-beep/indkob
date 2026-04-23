@@ -30,8 +30,8 @@
     --muted: 35 20% 94%;
     --muted-foreground: 220 10% 45%;
 
-    /* Terracotta accent */
-    --accent: 18 60% 55%;
+    /* Terracotta accent (darkened for AA contrast on light text) */
+    --accent: 18 65% 42%;
     --accent-foreground: 40 30% 98%;
 
     --destructive: 0 70% 50%;
@@ -44,7 +44,7 @@
     --radius: 0.75rem;
 
     /* Custom tokens */
-    --success: 150 45% 40%;
+    --success: 150 55% 28%;
     --success-foreground: 40 30% 98%;
     --warning: 40 85% 55%;
     --warning-foreground: 220 20% 15%;
