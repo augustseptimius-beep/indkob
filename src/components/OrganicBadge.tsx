@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import oMaerket from '@/assets/o-maerket.png';
 
 interface OrganicBadgeProps {
   className?: string;
@@ -17,26 +18,13 @@ export function OrganicBadge({ className, size = 'md' }: OrganicBadgeProps) {
   };
 
   return (
-    <span
-      role="img"
-      aria-label="Økologisk"
-      title="Økologisk"
-      className={cn(
-        'inline-flex items-center justify-center rounded-full bg-[hsl(0_72%_42%)] text-white font-serif font-bold shadow-sm',
-        sizeClasses[size],
-        className,
-      )}
-    >
-      <span
-        className={cn(
-          'leading-none',
-          size === 'sm' && 'text-[0.85rem]',
-          size === 'md' && 'text-base',
-          size === 'lg' && 'text-2xl',
-        )}
-      >
-        Ø
-      </span>
-    </span>
+    <img
+      src={oMaerket}
+      alt="Statskontrolleret økologisk"
+      title="Statskontrolleret økologisk"
+      loading="lazy"
+      decoding="async"
+      className={cn('object-contain shrink-0', sizeClasses[size], className)}
+    />
   );
 }
