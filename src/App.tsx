@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,9 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
-import { CookieBanner } from "@/components/CookieBanner";
-import { ConsentModal } from "@/components/ConsentModal";
-import { CartSidebar } from "@/components/cart/CartSidebar";
 import Index from "./pages/Index";
 
 // Lazy-load alle ikke-LCP-ruter for at reducere initial JS-bundle.
@@ -22,6 +19,38 @@ const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Defer non-critical UI (cart sidebar, cookie banner, consent modal) ud af initial bundle.
+const CartSidebar = lazy(() =>
+  import("@/components/cart/CartSidebar").then(m => ({ default: m.CartSidebar }))
+);
+const CookieBanner = lazy(() =>
+  import("@/components/CookieBanner").then(m => ({ default: m.CookieBanner }))
+);
+const ConsentModal = lazy(() =>
+  import("@/components/ConsentModal").then(m => ({ default: m.ConsentModal }))
+);
+
+function DeferredOverlays() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const w = window as any;
+    const schedule = w.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 200));
+    const handle = schedule(() => setReady(true));
+    return () => {
+      const cancel = w.cancelIdleCallback || clearTimeout;
+      cancel(handle);
+    };
+  }, []);
+  if (!ready) return null;
+  return (
+    <Suspense fallback={null}>
+      <CartSidebar />
+      <CookieBanner />
+      <ConsentModal />
+    </Suspense>
+  );
+}
 
 const queryClient = new QueryClient();
 
@@ -48,9 +77,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-            <CookieBanner />
-            <ConsentModal />
-            <CartSidebar />
+            <DeferredOverlays />
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>

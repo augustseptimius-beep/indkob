@@ -24,7 +24,7 @@ export function HeroSection() {
       <div className="container-wide relative py-20 md:py-32">
         <div className="max-w-3xl mx-auto text-center">
           {/* Badge with member count */}
-          <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 py-2 rounded-2xl sm:rounded-full bg-primary/10 text-primary mb-8 animate-fade-in">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-3 px-4 py-2 rounded-2xl sm:rounded-full bg-primary/10 text-primary mb-8">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 shrink-0" />
               <span className="text-sm font-medium">Lokalt fællesskab</span>
@@ -41,15 +41,15 @@ export function HeroSection() {
           </div>
 
           {/* Title */}
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-slide-up">
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
             Klitmøllers Indkøbsfællesskab
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground mb-4 animate-slide-up delay-100">
+          <p className="text-xl md:text-2xl text-muted-foreground mb-4">
             Fællesskab gennem fælles indkøb
           </p>
 
-          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto animate-slide-up delay-200">
+          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
             Hej Klitmøller - Vi er forsøg på et lokalt indkøbsfællesskab, hvor vi går sammen om at købe store partier af kvalitetsvarer til gode priser. Fællesskabet og platformen her er gratis i test-perioden, men virker som den skal.  
   
   
