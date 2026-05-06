@@ -545,6 +545,20 @@ export function AdminOrders() {
                             ))}
                           </div>
                         </div>
+                        <Button
+                          onClick={() => {
+                            if (window.confirm(`Produktet har kun nået ${product.current_quantity} af ${product.target_quantity} ${product.unit_name}. Vil du bestille det hjem alligevel?`)) {
+                              markProductAsOrdered(product.id);
+                            }
+                          }}
+                          disabled={updatingStatus === product.id}
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 gap-2"
+                        >
+                          <Truck className="h-4 w-4" />
+                          {updatingStatus === product.id ? 'Bestiller...' : 'Bestil hjem alligevel'}
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
