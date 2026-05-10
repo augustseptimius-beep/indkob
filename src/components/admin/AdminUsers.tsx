@@ -334,7 +334,7 @@ export function AdminUsers() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Navn</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Kontakt</TableHead>
                   <TableHead className="hidden md:table-cell">Telefon</TableHead>
                   <TableHead>Rolle</TableHead>
                   <TableHead className="hidden sm:table-cell">Oprettet</TableHead>
@@ -349,11 +349,44 @@ export function AdminUsers() {
                       <TableCell className="font-medium">
                         {user.full_name || 'Intet navn'}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {user.email || '—'}
+                      <TableCell className="text-sm">
+                        <div className="flex flex-col gap-1">
+                          {user.email ? (
+                            <a
+                              href={`mailto:${user.email}`}
+                              className="text-primary hover:underline break-all"
+                            >
+                              {user.email}
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                          {/* Phone shown here on mobile only */}
+                          <span className="md:hidden">
+                            {user.phone ? (
+                              <a
+                                href={`sms:${user.phone}`}
+                                className="text-primary hover:underline"
+                              >
+                                {user.phone}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {user.phone || '—'}
+                      <TableCell className="hidden md:table-cell text-sm">
+                        {user.phone ? (
+                          <a
+                            href={`sms:${user.phone}`}
+                            className="text-primary hover:underline"
+                          >
+                            {user.phone}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {user.isAdmin ? (
