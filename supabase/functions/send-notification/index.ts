@@ -1031,6 +1031,14 @@ async function handleProductStatusEmail(
   const templateKey = "product_ordered";
   const emailTemplate = await getEmailTemplate(supabase, templateKey);
 
+  // Get MobilePay number from CMS (template may reference {{mobilepay_number}})
+  const { data: paymentInfo } = await supabase
+    .from("cms_content")
+    .select("content")
+    .eq("key", "payment_info")
+    .maybeSingle();
+  const mobilepayNumber = (paymentInfo as { content: string | null } | null)?.content || "xxx-xxxxx";
+
   // Get reservations - only specific IDs if provided, otherwise all for this product
   let query = supabase
     .from("reservations")
@@ -1097,6 +1105,7 @@ async function handleProductStatusEmail(
       unit_name: product.unit_name,
       price_per_unit: product.price_per_unit.toString(),
       total_price: totalPrice,
+      mobilepay_number: mobilepayNumber,
     };
 
     let subject: string;
